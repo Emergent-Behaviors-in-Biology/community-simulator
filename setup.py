@@ -15,5 +15,5 @@ setup(name='community_simulator',
       author='Robert Marsland III',
       author_email='robertvsiii@gmail.com',
       license='MIT',
-      packages=['community-simulator'],
+      packages=['community_simulator'],
       zip_safe=False)

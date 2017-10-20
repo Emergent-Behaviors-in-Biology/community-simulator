@@ -8,11 +8,12 @@ Created on Thu Oct 19 11:09:38 2017
 
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def NonzeroColumns(data,thresh=0):
     return data.keys()[np.where(np.sum(data)>thresh)]
 
-def StackPlot(df,ax=None,labels=False):
+def StackPlot(df,ax=None,labels=False,title=None):
     if ax == None:
         fig, ax = plt.subplots(1)
     w = len(df.keys())
@@ -26,6 +27,9 @@ def StackPlot(df,ax=None,labels=False):
         ax.set_xticklabels((df.keys()))
     else:
         ax.set_xticks(())
+        
+    if title != None:
+        ax.set_title(title)
     
     return ax
 

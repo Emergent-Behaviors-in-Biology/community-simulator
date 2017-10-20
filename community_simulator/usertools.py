@@ -49,18 +49,14 @@ def BinaryRandomMatrix(a,b,p):
     
     return m
 
-Stot = 1000
-Sbar = 100
-M = 10
-n_demes = 10
-
 def UniformRandomCRM(cmin = 0.7, consume_frac = 0.7, Stot = 1000, Sbar = 100, 
-                     M = 10, n_demes = 10):
+                     M = 10, n_demes = 10, R0small = 1.):
     off = 1./((1./cmin)-1)
     c = (np.random.rand(Stot,M)+off)/(1+off)*BinaryRandomMatrix(Stot,M,consume_frac)
     m = np.ones(Stot)*0.01
     N0 = BinaryRandomMatrix(Stot,n_demes,Sbar*1./Stot)*1./Sbar
-    R0 = np.ones((M,n_demes))
+    R0 = np.ones((M,n_demes))*R0small
+    R0[0] = 1
     
     init_state = [N0,R0]
     dynamics = [models.dNdt_CRM,models.dRdt_CRM]
