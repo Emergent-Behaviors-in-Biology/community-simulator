@@ -17,22 +17,23 @@ from essentialtools import IntegrateDeme, TimeStamp
 class Community:
     def __init__(self,init_state,dynamics,params):
         self.N, self.R = init_state
-        self.R0 = self.R.copy()
-        self.params = params
-        self.dNdt, self.dRdt = dynamics
-        self.S, self.A = np.shape(self.N)
-        self.M = np.shape(self.R)[0]
-    
+
         if not isinstance(self.N, pd.DataFrame):
             column_names = ['D'+str(k) for k in range(np.shape(self.N)[1])]
             species_names = ['S'+str(k) for k in range(np.shape(self.N)[0])]
             self.N = pd.DataFrame(self.N,columns=column_names)
             self.N.index = species_names
             
-        if not isinstance(self.R0, pd.DataFrame):
+        if not isinstance(self.R, pd.DataFrame):
             resource_names = ['R'+str(k) for k in range(np.shape(self.R)[0])]
             self.R = pd.DataFrame(self.R,columns=self.N.keys())
             self.R.index = resource_names
+            
+        self.R0 = self.R.copy()
+        self.params = params
+        self.dNdt, self.dRdt = dynamics
+        self.S, self.A = np.shape(self.N)
+        self.M = np.shape(self.R)[0]
             
     def dydt(self,y,t):
         return np.hstack([self.dNdt(y[:self.S],y[self.S:],self.params),

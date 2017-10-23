@@ -33,12 +33,19 @@ def StackPlot(df,ax=None,labels=False,title=None):
     
     return ax
 
-def PlotTraj(traj,dropzeros = False, plottype = 'stack'):
+def PlotTraj(traj, dropzeros = False, plottype = 'stack', demechoice = None,
+             figsize = (10,20)):
+    if demechoice!= None:
+        for item in demechoice:
+            assert item in traj.index.levels[-1], "demechoice must be a list of deme labels"
+        traj = traj.reindex(demechoice,level=1)
+        
     group = traj.index.names[-1]
     nplots = len(traj.index.levels[-1])
-    f, axs = plt.subplots(nplots, sharex = True, figsize = (10,20))
+    f, axs = plt.subplots(nplots, sharex = True, figsize = figsize)
     k = 0
     
+
     for item in traj.index.levels[-1]:
             plot_data = traj.xs(item,level=group)
             if dropzeros:
@@ -48,8 +55,8 @@ def PlotTraj(traj,dropzeros = False, plottype = 'stack'):
                 if k == nplots-1:
                     t_axis = traj.index.levels[0]
                     axs[k].set_xticks(range(len(t_axis)))
-                    axs[k].set_xticklabels([str(t)[:4] for t in t_axis])
-                    axs[k].set_xlabel(t_axis.name)
+                    axs[k].set_xticklabels(range(len(t_axis)))
+                    axs[k].set_xlabel('Dilution Cycles')
             elif plottype == 'line':
                 plot_data.plot(ax = axs[k], legend = False)
             else:
