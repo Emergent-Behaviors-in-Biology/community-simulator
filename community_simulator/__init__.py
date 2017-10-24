@@ -44,20 +44,21 @@ class Community:
             
     def Reset(self,init_state):
         self.N, self.R = init_state
-        self.R0 = self.R.copy()
-        self.S, self.A = np.shape(self.N)
-        self.M = np.shape(self.R)[0]
-    
+        
         if not isinstance(self.N, pd.DataFrame):
             column_names = ['D'+str(k) for k in range(np.shape(self.N)[1])]
             species_names = ['S'+str(k) for k in range(np.shape(self.N)[0])]
             self.N = pd.DataFrame(self.N,columns=column_names)
             self.N.index = species_names
             
-        if not isinstance(self.R0, pd.DataFrame):
+        if not isinstance(self.R, pd.DataFrame):
             resource_names = ['R'+str(k) for k in range(np.shape(self.R)[0])]
             self.R = pd.DataFrame(self.R,columns=self.N.keys())
             self.R.index = resource_names
+            
+        self.R0 = self.R.copy()
+        self.S, self.A = np.shape(self.N)
+        self.M = np.shape(self.R)[0]
             
     def Propagate(self,T):
         y_in = self.N.append(self.R).T.values
@@ -72,7 +73,7 @@ class Community:
         self.R = pd.DataFrame(y_out[self.S:,:],
                               index = self.R.index, columns = self.R.keys())
         
-    def Dilute(self,f_in,scale=10**9):
+    def Dilute(self,f_in,scale=10**9,include_resource = True):
         f = np.asarray(f_in) #Allow for f to be a dataframe
         N_tot = np.sum(self.N)
         N = np.zeros(np.shape(self.N))
@@ -82,7 +83,8 @@ class Community:
                     N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale
             
         self.N = pd.DataFrame(N, index = self.N.index, columns = self.N.keys())
-        self.R = self.R0 + pd.DataFrame(np.dot(self.R,f), index = self.R.index, columns = self.R.keys())
+        if include_resource:
+            self.R = self.R0 + pd.DataFrame(np.dot(self.R,f.T), index = self.R.index, columns = self.R.keys())
         
     def RunExperiment(self,f,T,np,group='Deme',scale=10**9):
         t = 0

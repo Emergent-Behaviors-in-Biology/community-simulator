@@ -9,6 +9,9 @@ Created on Thu Oct 19 11:11:49 2017
 import numpy as np
 import models
 
+def CosDist(df1,df2):
+    return (df1*df2).sum()/np.sqrt((df1*df1).sum()*(df2*df2).sum())
+
 def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     assert np.all(CommunityInstance1.N.index == CommunityInstance2.N.index), "Communities must have the same species names."
     assert np.all(CommunityInstance1.R.index == CommunityInstance2.R.index), "Communities must have the same resource names."
@@ -20,12 +23,13 @@ def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     N0_mix = np.zeros((CommunityInstance1.S,n_demes1*n_demes2))
     N0_mix[:,:n_demes1] = CommunityInstance1.N
     N0_mix[:,n_demes1:n_demes1+n_demes2] = CommunityInstance2.N
-    if R0_mix == 'Com1':
-        R0vec = CommunityInstance1.R0.iloc[:,0].values[:,np.newaxis]
-        R0_mix = np.dot(R0vec,np.ones((1,n_demes1*n_demes2)))
-    elif R0_mix == 'Com2':
-        R0vec = CommunityInstance2.R0.iloc[:,0].values[:,np.newaxis]
-        R0_mix = np.dot(R0vec,np.ones((1,n_demes1*n_demes2)))
+    if type(R0_mix) == str:
+        if R0_mix == 'Com1':
+            R0vec = CommunityInstance1.R0.iloc[:,0].values[:,np.newaxis]
+            R0_mix = np.dot(R0vec,np.ones((1,n_demes1*n_demes2)))
+        elif R0_mix == 'Com2':
+            R0vec = CommunityInstance2.R0.iloc[:,0].values[:,np.newaxis]
+            R0_mix = np.dot(R0vec,np.ones((1,n_demes1*n_demes2)))
     else:
         assert np.shape(R0_mix) == (CommunityInstance1.M,n_demes1*n_demes2), "Valid R0_mix values are 'Com1', 'Com2', or a resource matrix of dimension M x (n_demes1*n_demes2)."
         
@@ -50,7 +54,7 @@ def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     #Initialize new community and apply mixing
     Batch_mix = CommunityInstance1.copy()
     Batch_mix.Reset([N0_mix,R0_mix])
-    Batch_mix.Dilute(f_mix)
+    Batch_mix.Dilute(f_mix,include_resource=False)
     
     return Batch_mix, N_1, N_2, N_sum
 

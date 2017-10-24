@@ -62,4 +62,3 @@ def PlotTraj(traj, dropzeros = False, plottype = 'stack', demechoice = None,
             else:
                 return 'Invalid plot type.'
             k+=1
-    plt.show()
