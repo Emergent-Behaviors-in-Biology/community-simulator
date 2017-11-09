@@ -101,18 +101,23 @@ class Community:
         return N_traj, R_traj
     
     
-    def TestDeme(self,T = 4,DemeName = None,f0 = 1e-3):
+    def TestDeme(self,T = 4,DemeName = None,f0 = 1e-3,log_time = False,ns=100):
         if DemeName == None:
             DemeName = self.N.keys()[0]
         N0 = self.N.copy()[DemeName] * f0
         R0 = self.R.copy()[DemeName]
-        t, out = IntegrateDeme(self,N0.append(R0),T=T,ns=100,return_all=True)
+        t, out = IntegrateDeme(self,N0.append(R0),
+                               T=T,ns=ns,return_all=True,log_time=log_time)
         f, axs = plt.subplots(2,sharex=True)
         Ntraj = out[:,:self.S]
         Rtraj = out[:,self.S:]
-        axs[0].plot(t,Ntraj)
-        axs[0].set_ylabel('Species Abundance')
-        axs[1].plot(t,Rtraj)
+        if log_time:
+            axs[0].semilogx(t,Ntraj)
+            axs[1].semilogx(t,Rtraj)
+        else:
+            axs[0].plot(t,Ntraj)
+            axs[1].plot(t,Rtraj)
+        axs[0].set_ylabel('Consumer Abundance')
         axs[1].set_ylabel('Resource Abundance')
         axs[1].set_xlabel('Time')
         plt.show()

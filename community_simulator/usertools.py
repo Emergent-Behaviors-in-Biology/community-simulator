@@ -75,9 +75,12 @@ def UniformRandomCRM(cmin = 0.7, consume_frac = 0.7, Stot = 1000, Sbar = 100,
     R0 = np.ones((M,n_demes))*trace_resource_abund
     R0[main_resource_ind] = 1
     
+    r = np.zeros(M)
+    Kinv = np.ones(M)
+    
     init_state = [N0,R0]
     dynamics = [models.dNdt_CRM,models.dRdt_CRM]
-    params = [c,m]
+    params = [c,m,Kinv,r]
     
     
     return init_state, dynamics, params

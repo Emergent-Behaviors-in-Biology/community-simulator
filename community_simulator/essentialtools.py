@@ -10,8 +10,11 @@ import pandas as pd
 import numpy as np
 from scipy import integrate
 
-def IntegrateDeme(CommunityInstance,y0,T=1,ns=2,return_all=False):
-    t = np.linspace(0,T,ns)
+def IntegrateDeme(CommunityInstance,y0,T=1,ns=2,return_all=False,log_time=False):
+    if log_time:
+        t = np.exp(np.linspace(0,np.log(T),ns))
+    else:
+        t = np.linspace(0,T,ns)
     if return_all:
         return t, integrate.odeint(CommunityInstance.dydt,y0,t)
     else:    
