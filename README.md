@@ -9,3 +9,7 @@ This package is designed for simulating batch culture experiments on complex mic
 - Repeat the previous two steps as many times as desired.
 
 This simulator is designed to replicate this kind of experiment, and to facilitate visualization and analysis of the results.
+
+## Installation
+To install on a Mac, browse to the community-simulator directory in Terminal, and type
+`pip install .`
