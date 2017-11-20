@@ -33,8 +33,9 @@ def StackPlot(df,ax=None,labels=False,title=None):
     
     return ax
 
-def PlotTraj(traj, dropzeros = False, plottype = 'stack', demechoice = None,
+def PlotTraj(traj_in, dropzeros = False, plottype = 'stack', demechoice = None,
              figsize = (10,20)):
+    traj = traj_in.copy()
     if demechoice!= None:
         for item in demechoice:
             assert item in traj.index.levels[-1], "demechoice must be a list of deme labels"
