@@ -1,4 +1,6 @@
+README.md
 community_simulator/__init__.py
+community_simulator/cavity_threelevel.py
 community_simulator/essentialtools.py
 community_simulator/models.py
 community_simulator/usertools.py

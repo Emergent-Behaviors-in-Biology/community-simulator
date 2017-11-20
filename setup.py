@@ -11,7 +11,7 @@ from setuptools import setup
 setup(name='community_simulator',
       version='0.1',
       description='Simulate batch culture experiments on microbial communities.',
-      url='https://github.mit.edu/robertvsiii-1/community-simulator',
+      url='https://github.com/robertvsiii/community-simulator',
       author='Robert Marsland III',
       author_email='robertvsiii@gmail.com',
       license='MIT',

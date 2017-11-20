@@ -9,9 +9,7 @@ Created on Thu Oct 19 11:03:48 2017
 import numpy as np
 
 def dNdt_CRM(N,R,params):
-    c,m,Kinv,r = params
-    return N*(np.dot(c,R)-m)
+    return N*(np.dot(params['c'],(R*params['w']))-params['m'])
 
 def dRdt_CRM(N,R,params):
-    c,m,Kinv,r = params
-    return r*R*(1-Kinv*R)-R*np.dot(c.T,N)
+    return params['r']*R*(1-params['Kinv']*R)-R*np.dot(params['c'].T,N)
