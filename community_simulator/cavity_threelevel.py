@@ -155,11 +155,11 @@ def CavityComparison_Gauss(params,S,n_demes=1):
     R0 = np.ones((M,n_demes))
     X0 = np.ones((Q,n_demes))*1e-3/Q
 
-    return [N0,R0,X0], [c_combined,m_i,Kinv_combined,r_combined]
+    return [N0,R0,X0], {'c':c_combined,'m':m_i,'Kinv':Kinv_combined,'r':r_combined}
 
 #Run community to steady state, extract moments of steady state, plot results
 def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=True,
-                 com_params=[],log_bounds=[-15,15]):
+                 com_params={},log_bounds=[-15,15]):
     logmin,logmax = log_bounds
     [N0,R0,X0], com_params_new = CavityComparison_Gauss(params,S)
     M = np.shape(R0)[0]
@@ -181,7 +181,7 @@ def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=Tru
         init_state = init_state + np.hstack((N0[:,0],1e-3*R0[:,0],X0[:,0]))
         
     #Integrate
-    t, out = essentialtools.IntegrateDeme(Batch,init_state,T=T,ns=ns,return_all=True,log_time=log_time)
+    t, out = essentialtools.IntegrateWell(Batch,init_state,T=T,ns=ns,return_all=True,log_time=log_time)
     
     #Extract results into separate vectors for the three levels
     Ntraj = out[:,:S]

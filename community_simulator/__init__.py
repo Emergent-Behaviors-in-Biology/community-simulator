@@ -12,14 +12,14 @@ import matplotlib.pyplot as plt
 import copy
 from multiprocessing import Pool
 from functools import partial
-from essentialtools import IntegrateDeme, TimeStamp
+from .essentialtools import IntegrateWell, TimeStamp
 
 class Community:
-    def __init__(self,init_state,dynamics,params):
+    def __init__(self,init_state,dynamics,params,scale=10**9):
         self.N, self.R = init_state
 
         if not isinstance(self.N, pd.DataFrame):
-            column_names = ['D'+str(k) for k in range(np.shape(self.N)[1])]
+            column_names = ['W'+str(k) for k in range(np.shape(self.N)[1])]
             species_names = ['S'+str(k) for k in range(np.shape(self.N)[0])]
             self.N = pd.DataFrame(self.N,columns=column_names)
             self.N.index = species_names
@@ -30,10 +30,15 @@ class Community:
             self.R.index = resource_names
             
         self.R0 = self.R.copy()
-        self.params = params
+        self.params = params.copy()
+        for item in self.params:
+            if isinstance(self.params[item],pd.DataFrame):
+                self.params[item]=self.params[item].values.squeeze()
         self.dNdt, self.dRdt = dynamics
-        self.S, self.A = np.shape(self.N)
+        self.S, self.n_wells = np.shape(self.N)
         self.M = np.shape(self.R)[0]
+        
+        self.scale = scale
             
     def dydt(self,y,t):
         return np.hstack([self.dNdt(y[:self.S],y[self.S:],self.params),
@@ -57,15 +62,15 @@ class Community:
             self.R.index = resource_names
             
         self.R0 = self.R.copy()
-        self.S, self.A = np.shape(self.N)
+        self.S, self.n_wells = np.shape(self.N)
         self.M = np.shape(self.R)[0]
             
     def Propagate(self,T):
         y_in = self.N.append(self.R).T.values
-        IntegrateTheseDemes = partial(IntegrateDeme,self,T=T)
+        IntegrateTheseWells = partial(IntegrateWell,self,T=T)
         
         pool = Pool()
-        y_out = np.asarray(pool.map(IntegrateTheseDemes,y_in)).squeeze().T
+        y_out = np.asarray(pool.map(IntegrateTheseWells,y_in)).squeeze().T
         pool.close()
         
         self.N = pd.DataFrame(y_out[:self.S,:],
@@ -73,26 +78,28 @@ class Community:
         self.R = pd.DataFrame(y_out[self.S:,:],
                               index = self.R.index, columns = self.R.keys())
         
-    def Dilute(self,f_in,scale=10**9,include_resource = True):
+    def Passage(self,f_in,scale=None,include_resource = True):
+        if scale == None:
+            scale = self.scale #Use scale from initialization by default
         f = np.asarray(f_in) #Allow for f to be a dataframe
         N_tot = np.sum(self.N)
         N = np.zeros(np.shape(self.N))
-        for k in range(self.A):
-            for j in range(self.A):
-                if f[k,j] > 0:
+        for k in range(self.n_wells):
+            for j in range(self.n_wells):
+                if f[k,j] > 0 and N_tot[j] > 0:
                     N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale
             
         self.N = pd.DataFrame(N, index = self.N.index, columns = self.N.keys())
         if include_resource:
             self.R = self.R0 + pd.DataFrame(np.dot(self.R,f.T), index = self.R.index, columns = self.R.keys())
         
-    def RunExperiment(self,f,T,np,group='Deme',scale=10**9):
+    def RunExperiment(self,f,T,np,group='Well',scale=10**9):
         t = 0
         N_traj = TimeStamp(self.N,t,group=group)
         R_traj = TimeStamp(self.R,t,group=group)
 
         for j in range(np):
-            self.Dilute(f,scale=scale)
+            self.Passage(f,scale=scale)
             self.Propagate(T)
             t += T
             N_traj = N_traj.append(TimeStamp(self.N,t,group=group))
@@ -101,12 +108,12 @@ class Community:
         return N_traj, R_traj
     
     
-    def TestDeme(self,T = 4,DemeName = None,f0 = 1e-3,log_time = False,ns=100):
-        if DemeName == None:
-            DemeName = self.N.keys()[0]
-        N0 = self.N.copy()[DemeName] * f0
-        R0 = self.R.copy()[DemeName]
-        t, out = IntegrateDeme(self,N0.append(R0),
+    def TestWell(self,T = 4,WellName = None,f0 = 1.,log_time = False,ns=100):
+        if WellName == None:
+            WellName = self.N.keys()[0]
+        N_well = self.N.copy()[WellName] * f0
+        R_well = self.R.copy()[WellName]
+        t, out = IntegrateWell(self,N_well.append(R_well),
                                T=T,ns=ns,return_all=True,log_time=log_time)
         f, axs = plt.subplots(2,sharex=True)
         Ntraj = out[:,:self.S]
