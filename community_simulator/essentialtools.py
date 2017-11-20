@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from scipy import integrate
 
-def IntegrateDeme(CommunityInstance,y0,T=1,ns=2,return_all=False,log_time=False):
+def IntegrateWell(CommunityInstance,y0,T=1,ns=2,return_all=False,log_time=False):
     if log_time:
         t = np.exp(np.linspace(0,np.log(T),ns))
     else:
@@ -20,10 +20,10 @@ def IntegrateDeme(CommunityInstance,y0,T=1,ns=2,return_all=False,log_time=False)
     else:    
         return integrate.odeint(CommunityInstance.dydt,y0,t)[-1]
     
-def TimeStamp(data,t,group='Deme'):
-    if group == 'Deme':
+def TimeStamp(data,t,group='Well'):
+    if group == 'Well':
         data_time = data.copy().T
-        mdx = pd.MultiIndex.from_product([[t],data_time.index],names=['Time','Deme'])
+        mdx = pd.MultiIndex.from_product([[t],data_time.index],names=['Time','Well'])
     elif group == 'Species':    
         data_time = data.copy()
         mdx = pd.MultiIndex.from_product([[t],data.index],names=['Time','Species'])
