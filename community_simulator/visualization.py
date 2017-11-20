@@ -21,7 +21,8 @@ def StackPlot(df,ax=None,labels=False,title=None):
     ax.set_yticks(())
     ax.set_xticks(range(w))
     ax.set_xlim((0,w-1))
-    ax.set_ylim((0,np.max(df.sum())))
+    if np.max(df.sum()) > 0:
+        ax.set_ylim((0,np.max(df.sum())))
     
     if labels:
         ax.set_xticklabels((df.keys()))

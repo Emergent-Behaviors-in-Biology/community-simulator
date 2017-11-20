@@ -150,12 +150,14 @@ def CavityComparison_Gauss(params,S,n_demes=1):
     c_combined = np.hstack((c_ibeta,-d_aj.T))
     r_combined = np.hstack((K_alpha,-u_a))
     Kinv_combined = np.hstack((1./K_alpha,np.zeros(Q)))
+    w_combined = np.ones(len(r_combined))
     
     N0 = np.ones((S,n_demes))*1e-3/S
     R0 = np.ones((M,n_demes))
     X0 = np.ones((Q,n_demes))*1e-3/Q
 
-    return [N0,R0,X0], {'c':c_combined,'m':m_i,'Kinv':Kinv_combined,'r':r_combined}
+    return [N0,R0,X0], {'c':c_combined,'m':m_i,'Kinv':Kinv_combined,
+           'r':r_combined,'w':w_combined}
 
 #Run community to steady state, extract moments of steady state, plot results
 def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=True,
