@@ -13,3 +13,10 @@ def dNdt_CRM(N,R,params):
 
 def dRdt_CRM(N,R,params):
     return params['r']*R*(1-params['Kinv']*R)-R*np.dot(params['c'].T,N)
+
+def dNdt_MCRM(N,R,params):
+    return N*(np.dot(params['c'],R*(params['w']-np.dot(params['D'],params['w'])))-params['m'])
+
+def dRdt_MCRM(N,R,params):
+    return (params['r']*R*(1-params['Kinv']*R)-R*np.dot(params['c'].T,N)
+            +np.dot(params['D'],np.dot(params['c'].T,N)*R))
