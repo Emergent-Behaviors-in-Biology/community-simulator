@@ -12,4 +12,5 @@ This simulator is designed to replicate this kind of experiment, and to facilita
 
 ## Installation
 To install on a Mac, browse to the community-simulator directory in Terminal, and type
-`pip install .`
+`pip install -e .`
+The `-e` flag makes the package 'editable,' so that changes made in the community-simulator directory are carried over to the location where Python stores installed module files. If you are running GitHub Desktop, this allows you to simply hit the "fetch origin" button to update the code to the latest version.
