@@ -108,7 +108,7 @@ class Community:
         return N_traj, R_traj
     
     
-    def TestWell(self,T = 4,WellName = None,f0 = 1.,log_time = False,ns=100):
+    def TestWell(self,T = 4,WellName = None,f0 = 1e-3,log_time = False,ns=100):
         if WellName == None:
             WellName = self.N.keys()[0]
         N_well = self.N.copy()[WellName] * f0
