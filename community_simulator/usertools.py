@@ -9,8 +9,92 @@ Created on Thu Oct 19 11:11:49 2017
 import numpy as np
 from . import models
 
-def CosDist(df1,df2):
-    return (df1*df2).sum()/np.sqrt((df1*df1).sum()*(df2*df2).sum())
+params_default = {'SA': 9*np.ones(5), #Number of species in each family
+          'MA': 10*np.ones(10), #Number of resources of each type
+          'Sgen': 10, #Number of generalist species
+          'muc': 1, #Mean sum of consumption rates in Gaussian model
+          'sigc': .0001, #Variance in consumption rate in Gaussian model
+          'q': 0.5, #Preference strength 
+          'c0':0.0001, #Background consumption rate in binary model
+          'c1':1. #Maximum consumption rate in binary model
+         }
+
+def MakeConsumerMatrix(params = params_default, kind='Gaussian'):
+    """Construct consumer matrix with family structure specified in parameter dictionary params.
+    Choose one of two kinds of sampling: Gaussian or Binary."""
+    
+    #Force numbers of species to be integers
+    params['MA'] = np.asarray(params['MA'],dtype=int)
+    params['SA'] = np.asarray(params['SA'],dtype=int)
+    params['Sgen'] = int(params['Sgen'])
+    
+    #Extract total numbers of resources, consumers, resource types, and consumer families
+    M = np.sum(params['MA'])
+    T = len(params['MA'])
+    S = np.sum(params['SA'])+params['Sgen']
+    F = len(params['SA'])
+    
+    #Construct lists of names of resources, consumers, resource types, and consumer families
+    resource_names = ['R'+str(k) for k in range(M)]
+    type_names = ['T'+str(k) for k in range(T)]
+    family_names = ['F'+str(k) for k in range(F)]
+    consumer_names = ['S'+str(k) for k in range(S)]
+    resource_index = [[type_names[m] for m in range(T) for k in range(params['MA'][m])],
+                      resource_names]
+    consumer_index = [[family_names[m] for m in range(F) for k in range(params['SA'][m])]
+                      +['GEN' for k in range(params['Sgen'])],consumer_names]
+    
+    #Perform Gaussian sampling
+    if kind == 'Gaussian':
+        #Sample Gaussian random numbers with variance sigc and mean muc/M
+        c = pd.DataFrame(np.random.randn(S,M)*params['sigc']+np.ones((S,M))*params['muc']/M,
+                     columns=resource_index,index=consumer_index)
+    
+        #Bias consumption of each family towards its preferred resource
+        for k in range(F):
+            for j in range(T):
+                if k==j:
+                    c.loc['F'+str(k),'T'+str(j)] = c.loc['F'+str(k),'T'+str(j)].values + params['q']/params['MA'][k]
+                else:
+                    c.loc['F'+str(k),'T'+str(j)] = c.loc['F'+str(k),'T'+str(j)].values - params['q']/(M-params['MA'][k])
+                    
+    #Perform binary sampling
+    elif kind == 'Binary':
+        #Construct uniform matrix at background consumption rate c0
+        c = pd.DataFrame(np.ones((S,M))*params['c0'],columns=resource_index,index=consumer_index)
+    
+        #Sample binary random matrix blocks for each pair of family/resource type
+        for k in range(F):
+            for j in range(T):
+                if k==j:
+                    p = (1./M) + params['q']/params['MA'][k]
+                else:
+                    p = (1./M) - params['q']/(M-params['MA'][k])
+                    
+                c.loc['F'+str(k),'T'+str(j)] = (c.loc['F'+str(k),'T'+str(j)].values 
+                                                + BinaryRandomMatrix(params['SA'][k],params['MA'][j],p))
+        #Sample uniform binary random matrix for generalists  
+        p = 1./M
+        c.loc['GEN'] = c.loc['GEN'].values + BinaryRandomMatrix(params['Sgen'],M,p)
+    
+    else:
+        print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
+        return 'Error'
+        
+    return c
+
+def AddLabels(N0_values,R0_values,c):
+    """Apply labels from consumer matrix c to arrays of initial consumer and resource 
+    concentrations N0_values and R0_values."""
+    
+    assert type(c) == pd.DataFrame, 'Consumer matrix must be a Data Frame.'
+    
+    n_wells = np.shape(N0_values)[1]
+    well_names = ['W'+str(k) for k in range(n_wells)]
+    N0 = pd.DataFrame(N0_values,columns=well_names,index=c.index)
+    R0 = pd.DataFrame(R0_values,columns=well_names,index=c.keys())
+    
+    return N0, R0
 
 def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     assert np.all(CommunityInstance1.N.index == CommunityInstance2.N.index), "Communities must have the same species names."
@@ -58,6 +142,10 @@ def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     
     return Batch_mix, N_1, N_2, N_sum
 
+def SimpleDilution(CommunityInstance, f0 = 1e-3):
+    f = f0 * np.eye(CommunityInstance.n_wells)
+    return f
+
 def BinaryRandomMatrix(a,b,p):
     r = np.random.rand(a,b)
     m = np.zeros((a,b))
@@ -65,30 +153,6 @@ def BinaryRandomMatrix(a,b,p):
     
     return m
 
-def UniformRandomCRM(cmin = 0.7, consume_frac = 0.7, Stot = 1000, Sbar = 100, 
-                     M = 10, n_wells = 10, main_resource_ind = 0,
-                     trace_resource_abund = 1.0e-3):
-    off = 1./((1./cmin)-1)
-    c = (np.random.rand(Stot,M)+off)/(1+off)*BinaryRandomMatrix(Stot,M,consume_frac)
-    m = np.ones(Stot)*0.01
-    N0 = BinaryRandomMatrix(Stot,n_wells,Sbar*1./Stot)*1./Sbar
-    R0 = np.ones((M,n_wells))*trace_resource_abund
-    R0[main_resource_ind] = 1
-    
-    r = np.zeros(M)
-    Kinv = np.ones(M)
-    w = np.ones((M,1))
-    
-    init_state = [N0,R0]
-    dynamics = [models.dNdt_CRM,models.dRdt_CRM]
-    params={'c':c,
-            'm':m,
-            'w':w,
-            'Kinv':Kinv,
-            'r':r}
-    
-    return init_state, dynamics, params
+def CosDist(df1,df2):
+    return (df1*df2).sum()/np.sqrt((df1*df1).sum()*(df2*df2).sum())
 
-def SimpleDilution(CommunityInstance, f0 = 1e-3):
-    f = f0 * np.eye(CommunityInstance.n_wells)
-    return f
