@@ -7,8 +7,10 @@ Created on Thu Oct 19 11:11:49 2017
 """
 
 import numpy as np
+import pandas as pd
 from . import models
 
+#Default parameters for consumer matrix
 params_default = {'SA': 9*np.ones(5), #Number of species in each family
           'MA': 10*np.ones(10), #Number of resources of each type
           'Sgen': 10, #Number of generalist species
@@ -95,6 +97,34 @@ def AddLabels(N0_values,R0_values,c):
     R0 = pd.DataFrame(R0_values,columns=well_names,index=c.keys())
     
     return N0, R0
+
+def MakeDynamics(response='type I',regulation='independent',replenishment='off'):
+    sigma = {'type I': lambda x,params: x,
+             'type II': lambda x,params: x/(1+x/params['K']),
+             'type III': lambda x,params: x**params['n']/(1+(x/params['K'])**params['n'])
+            }
+    
+    u = {'independent': lambda x,params: 1.,
+         'energy': lambda x,params: (((params['w']*x)**params['nreg']).T
+                                      /np.sum((params['w']*x)**params['nreg'],axis=1)).T,
+         'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
+        }
+    
+    h = {'off': lambda R,params: 0.,
+         'renew': lambda R,params: (params['R0']-R)/params['tau'],
+         'non-renew': lambda R,params: params['r']*R*(params['R0']-R)/params['R0']}
+    
+    F_in = lambda R,params: (u[regulation](params['c']*R,params)
+                             *params['w']*sigma[response](params['c']*R,params))
+    F_growth = lambda R,params: params['e_alpha']*F_in(R,params)
+    F_out = lambda R,params: ((1-params['e_alpha'])*F_in(R,params)).dot(params['D'].T)
+    
+    dNdt = lambda N,R,params: params['g']*N*(np.sum(F_growth(R,params),axis=1)-params['m'])
+    dRdt = lambda N,R,params: (h[replenishment](R,params)
+                               -(F_in(R,params)/params['w']).T.dot(N)
+                               +(F_out(R,params)/params['w']).T.dot(N))
+    
+    return dNdt, dRdt
 
 def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     assert np.all(CommunityInstance1.N.index == CommunityInstance2.N.index), "Communities must have the same species names."
