@@ -113,7 +113,7 @@ class Community:
             WellName = self.N.keys()[0]
         N_well = self.N.copy()[WellName] * f0
         R_well = self.R.copy()[WellName]
-        t, out = IntegrateWell(self,N_well.append(R_well),
+        t, out = IntegrateWell(self,N_well.append(R_well).values,
                                T=T,ns=ns,return_all=True,log_time=log_time)
         f, axs = plt.subplots(2,sharex=True)
         Ntraj = out[:,:self.S]
