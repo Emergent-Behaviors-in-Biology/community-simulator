@@ -24,30 +24,24 @@ def w2(Delta):
 #Standard deviations of invasion growth rates
 def sigX(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return np.sqrt(sigu**2 + sigd**2*eta*qN)
+    return np.sqrt(params['sigu']**2 + params['sigd']**2*params['eta']*qN)
 def sigN(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return np.sqrt(sigm**2 + sigc**2*gamma*qR+sigd**2*qX)
+    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['gamma']*qR+params['sigd']**2*qX)
 def sigR(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return np.sqrt(sigK**2 + sigc**2*qN)
+    return np.sqrt(params['sigK']**2 + params['sigc']**2*qN)
 
 #Mean invasion growth rates normalized by standard deviation
 def DelX(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (eta*mud*N-u)/sigX(args,params)
+    return (params['eta']*params['mud']*N-params['u'])/sigX(args,params)
 def DelN(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (gamma*muc*R-m-mud*X)/sigN(args,params)
+    return (params['gamma']*params['muc']*R-params['m']-params['mud']*X)/sigN(args,params)
 def DelR(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (K-muc*N)/sigR(args,params)
+    return (params['K']-params['muc']*N)/sigR(args,params)
 
 #Fraction of species that survive in steady state
 def phiX(args,params):
@@ -59,17 +53,17 @@ def phiR(args,params):
 
 #Factors for converting invasion growth rate to steady-state abundance
 def fX(args,params):
-    R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return sigc**2*(gamma*eta*phiR(args,params)+phiX(args,params)
-                    -eta*phiN(args,params))/(eta*sigd**2*(eta*phiN(args,params)-phiX(args,params)))
+    return params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
+                              -params['eta']*phiN(args,params))/(params['eta']*params['sigd']**2
+                                                                 *(params['eta']*phiN(args,params)
+                                                                   -phiX(args,params)))
 def fN(args,params):
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (eta-phiX(args,params)/phiN(args,params))/(sigc**2*(gamma*eta*phiR(args,params)+phiX(args,params)
-                                                               -eta*phiN(args,params)))
+    return ((params['eta']-phiX(args,params)/phiN(args,params))/
+            (params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
+                                -params['eta']*phiN(args,params))))
 def fR(args,params):
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return 1+(phiX(args,params)/(gamma*eta*phiR(args,params)))-(phiN(args,params)/(gamma*phiR(args,params)))
+    return (1+(phiX(args,params)/(params['gamma']*params['eta']*phiR(args,params)))
+            -(phiN(args,params)/(params['gamma']*phiR(args,params))))
 
 #Distributions of steady-state abundances
 def Xa(args,params,Xvec=np.linspace(0,10,100)):
@@ -90,12 +84,10 @@ def chiR(args,params):
 #Test satisfaction of competitive exclusion bound for consumers and predators
 def test_bound_1(log_args,params):
     args = np.exp(log_args)
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return gamma*phiR(args,params)-phiN(args,params)+phiX(args,params)/eta
+    return params['gamma']*phiR(args,params)-phiN(args,params)+phiX(args,params)/params['eta']
 def test_bound_2(log_args,params):
     args = np.exp(log_args)
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return eta*phiN(args,params)-phiX(args,params)
+    return params['eta']*phiN(args,params)-phiX(args,params)
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(log_args,params):
@@ -137,15 +129,14 @@ def cost_function_bounded(log_args,params,bounds):
     
 #Generate parameters for McArthur CRM from cavity parameters
 def CavityComparison_Gauss(params,S,n_demes=1):
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = np.asarray(params,dtype=float)
-    M = int(round(gamma*S))
-    Q = int(round(S/eta))
+    M = int(round(params['gamma']*S))
+    Q = int(round(S/params['eta']))
     
-    c_ibeta = muc/S + np.random.randn(S,M)*sigc/np.sqrt(S)
-    d_aj = mud/Q + np.random.randn(Q,S)*sigd/np.sqrt(Q)
-    m_i = m + np.random.randn(S)*sigm
-    u_a = u + np.random.randn(Q)*sigu
-    K_alpha = K + np.random.randn(M)*sigK
+    c_ibeta = params['muc']/S + np.random.randn(S,M)*params['sigc']/np.sqrt(S)
+    d_aj = params['mud']/Q + np.random.randn(Q,S)*params['sigd']/np.sqrt(Q)
+    m_i = params['m'] + np.random.randn(S)*params['sigm']
+    u_a = params['u'] + np.random.randn(Q)*params['sigu']
+    K_alpha = params['K'] + np.random.randn(M)*params['sigK']
     
     c_combined = np.hstack((c_ibeta,-d_aj.T))
     r_combined = np.hstack((K_alpha,-u_a))
