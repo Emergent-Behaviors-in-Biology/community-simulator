@@ -9,6 +9,7 @@ Created on Thu Oct 19 11:11:49 2017
 import numpy as np
 import pandas as pd
 from . import models
+from numpy.random import dirichlet
 
 #Default parameters for consumer matrix
 params_default = {'SA': 9*np.ones(5), #Number of species in each family
@@ -18,12 +19,17 @@ params_default = {'SA': 9*np.ones(5), #Number of species in each family
           'sigc': .0001, #Variance in consumption rate in Gaussian model
           'q': 0.5, #Preference strength 
           'c0':0.0001, #Background consumption rate in binary model
-          'c1':1. #Maximum consumption rate in binary model
+          'c1':1., #Maximum consumption rate in binary model
+          'fs':0.5, #Fraction of secretion flux with same resource type
+          'fw':0.5, #Fraction of secretion flux to 'waste' resource
+          'D_diversity':0.1 #Variability in secretion fluxes among resources (must be less than 1)
          }
 
-def MakeConsumerMatrix(params = params_default, kind='Gaussian'):
+
+def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
     """Construct consumer matrix with family structure specified in parameter dictionary params.
-    Choose one of two kinds of sampling: Gaussian or Binary."""
+    Choose one of two kinds of sampling: Gaussian or Binary.
+    waste_ind specifies the index of the resource type to be designated 'waste.'"""
     
     #Force numbers of species to be integers
     params['MA'] = np.asarray(params['MA'],dtype=int)
@@ -35,16 +41,19 @@ def MakeConsumerMatrix(params = params_default, kind='Gaussian'):
     T = len(params['MA'])
     S = np.sum(params['SA'])+params['Sgen']
     F = len(params['SA'])
+    M_waste = params['MA'][waste_ind]
     
     #Construct lists of names of resources, consumers, resource types, and consumer families
     resource_names = ['R'+str(k) for k in range(M)]
     type_names = ['T'+str(k) for k in range(T)]
     family_names = ['F'+str(k) for k in range(F)]
     consumer_names = ['S'+str(k) for k in range(S)]
+    waste_name = type_names[waste_ind]
     resource_index = [[type_names[m] for m in range(T) for k in range(params['MA'][m])],
                       resource_names]
     consumer_index = [[family_names[m] for m in range(F) for k in range(params['SA'][m])]
                       +['GEN' for k in range(params['Sgen'])],consumer_names]
+    
     
     #Perform Gaussian sampling
     if kind == 'Gaussian':
@@ -83,7 +92,20 @@ def MakeConsumerMatrix(params = params_default, kind='Gaussian'):
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
         return 'Error'
         
-    return c
+    #Make crossfeeding matrix
+    D = pd.DataFrame(np.zeros((M,M)),index=c.keys(),columns=c.keys())
+    for type_name in type_names:
+        MA = len(D.loc[type_name])
+        #Set background secretion levels
+        p = pd.Series(np.ones(M)*(1-params['fs']-params['fw'])/(M-MA-M_waste),index = D.keys())
+        #Set self-secretion level
+        p.loc[type_name] = params['fs']/MA
+        #Set waste secretion level
+        p.loc[waste_name] = params['fw']/M_waste
+        #Sample from dirichlet
+        D.loc[type_name] = dirichlet(p/params['D_diversity'],size=MA)
+        
+    return c, D
 
 def AddLabels(N0_values,R0_values,c):
     """Apply labels from consumer matrix c to arrays of initial consumer and resource 
