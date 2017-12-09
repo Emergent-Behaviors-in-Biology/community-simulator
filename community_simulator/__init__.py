@@ -30,13 +30,17 @@ class Community:
             self.R.index = resource_names
             
         self.R0 = self.R.copy()
+        self.S, self.n_wells = np.shape(self.N)
+        self.M = np.shape(self.R)[0]
+        self.dNdt, self.dRdt = dynamics
+        
         self.params = params.copy()
         for item in self.params:
             if isinstance(self.params[item],pd.DataFrame):
                 self.params[item]=self.params[item].values.squeeze()
-        self.dNdt, self.dRdt = dynamics
-        self.S, self.n_wells = np.shape(self.N)
-        self.M = np.shape(self.R)[0]
+        if 'D' not in params:
+            self.params['D'] = np.ones((self.M,self.M))
+            self.params['e'] = 1
         
         self.scale = scale
             

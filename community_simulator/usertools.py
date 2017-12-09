@@ -12,17 +12,17 @@ from . import models
 from numpy.random import dirichlet
 
 #Default parameters for consumer matrix
-params_default = {'SA': 9*np.ones(5), #Number of species in each family
-          'MA': 10*np.ones(10), #Number of resources of each type
-          'Sgen': 10, #Number of generalist species
+params_default = {'SA': 3*np.ones(3), #Number of species in each family
+          'MA': 3*np.ones(3), #Number of resources of each type
+          'Sgen': 3, #Number of generalist species
           'muc': 1, #Mean sum of consumption rates in Gaussian model
-          'sigc': .0001, #Variance in consumption rate in Gaussian model
-          'q': 0.5, #Preference strength 
+          'sigc': .01, #Variance in consumption rate in Gaussian model
+          'q': 2./3, #Preference strength 
           'c0':0.0001, #Background consumption rate in binary model
           'c1':1., #Maximum consumption rate in binary model
-          'fs':0.5, #Fraction of secretion flux with same resource type
-          'fw':0.5, #Fraction of secretion flux to 'waste' resource
-          'D_diversity':0.1 #Variability in secretion fluxes among resources (must be less than 1)
+          'fs':0.29, #Fraction of secretion flux with same resource type
+          'fw':0.7, #Fraction of secretion flux to 'waste' resource
+          'D_diversity':0.001 #Variability in secretion fluxes among resources (must be less than 1)
          }
 
 
@@ -120,7 +120,7 @@ def AddLabels(N0_values,R0_values,c):
     
     return N0, R0
 
-def MakeDynamics(response='type I',regulation='independent',replenishment='off'):
+def MakeResourceDynamics(response='type I',regulation='independent',replenishment='off'):
     sigma = {'type I': lambda x,params: x,
              'type II': lambda x,params: x/(1+x/params['K']),
              'type III': lambda x,params: x**params['n']/(1+(x/params['K'])**params['n'])
@@ -138,15 +138,30 @@ def MakeDynamics(response='type I',regulation='independent',replenishment='off')
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
                              *params['w']*sigma[response](params['c']*R,params))
-    F_growth = lambda R,params: params['e_alpha']*F_in(R,params)
-    F_out = lambda R,params: ((1-params['e_alpha'])*F_in(R,params)).dot(params['D'].T)
+    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
     
-    dNdt = lambda N,R,params: params['g']*N*(np.sum(F_growth(R,params),axis=1)-params['m'])
-    dRdt = lambda N,R,params: (h[replenishment](R,params)
+    return lambda N,R,params: (h[replenishment](R,params)
                                -(F_in(R,params)/params['w']).T.dot(N)
                                +(F_out(R,params)/params['w']).T.dot(N))
+
+def MakeConsumerDynamics(response='type I',regulation='independent',replenishment='off'):
+    sigma = {'type I': lambda x,params: x,
+             'type II': lambda x,params: x/(1+x/params['K']),
+             'type III': lambda x,params: x**params['n']/(1+(x/params['K'])**params['n'])
+            }
     
-    return dNdt, dRdt
+    u = {'independent': lambda x,params: 1.,
+         'energy': lambda x,params: (((params['w']*x)**params['nreg']).T
+                                      /np.sum((params['w']*x)**params['nreg'],axis=1)).T,
+         'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
+        }
+    
+    F_in = lambda R,params: (u[regulation](params['c']*R,params)
+                             *params['w']*sigma[response](params['c']*R,params))
+    F_growth = lambda R,params: params['e']*F_in(R,params)
+    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
+    
+    return lambda N,R,params: params['g']*N*(np.sum(F_growth(R,params),axis=1)-params['m'])
 
 def MixPairs(CommunityInstance1, CommunityInstance2, R0_mix = 'Com1'):
     assert np.all(CommunityInstance1.N.index == CommunityInstance2.N.index), "Communities must have the same species names."
