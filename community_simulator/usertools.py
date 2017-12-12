@@ -159,7 +159,6 @@ def MakeConsumerDynamics(response='type I',regulation='independent',replenishmen
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
                              *params['w']*sigma[response](params['c']*R,params))
     F_growth = lambda R,params: params['e']*F_in(R,params)
-    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
     
     return lambda N,R,params: params['g']*N*(np.sum(F_growth(R,params),axis=1)-params['m'])
 
