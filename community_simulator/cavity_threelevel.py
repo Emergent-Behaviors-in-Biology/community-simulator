@@ -8,7 +8,7 @@ Created on Thu Nov  9 14:51:13 2017
 
 import numpy as np
 from scipy.stats import norm
-from community_simulator import Community, models, essentialtools
+from community_simulator import Community, essentialtools, usertools
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.optimize as opt
@@ -127,6 +127,12 @@ def cost_function_bounded(log_args,params,bounds):
     else:
         return np.inf
     
+#Generate dynamics for McArthur CRM
+def dNdt_CRM(N,R,params):
+    return N*(np.dot(params['c'],(R*params['w']))-params['m'])
+def dRdt_CRM(N,R,params):
+    return params['r']*R*(1-params['Kinv']*R)-R*np.dot(params['c'].T,N)
+    
 #Generate parameters for McArthur CRM from cavity parameters
 def CavityComparison_Gauss(params,S,n_demes=1):
     M = int(round(params['gamma']*S))
@@ -151,8 +157,8 @@ def CavityComparison_Gauss(params,S,n_demes=1):
            'r':r_combined,'w':w_combined}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=True,
-                 com_params={},log_bounds=[-15,15]):
+def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=8000,
+                 log_time=True,plotting=True,com_params={},log_bounds=[-15,15]):
     logmin,logmax = log_bounds
     [N0,R0,X0], com_params_new = CavityComparison_Gauss(params,S)
     M = np.shape(R0)[0]
@@ -161,17 +167,15 @@ def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=Tru
     #Generate new parameter set unless user has passed one
     if len(com_params)==0:
         com_params = com_params_new
-    Batch = Community([N0,np.vstack((R0,X0))],[models.dNdt_CRM,models.dRdt_CRM],com_params)
+    Batch = Community([N0,np.vstack((R0,X0))],dynamics,com_params)
     
     #Use standard initial condition unless user has passed one
     if len(init_state)==0:
         init_state = np.hstack((N0[:,0],R0[:,0],X0[:,0]))
     else:
         #If user has passed an initial condition, remove very low abundance
-        #species, and attempt an invasion by all species. This ensures stability
-        #and convergence to true steady state
+        #species to ensure stability
         init_state[init_state<1e-20] = 0
-        init_state = init_state + np.hstack((N0[:,0],1e-3*R0[:,0],X0[:,0]))
         
     #Integrate
     t, out = essentialtools.IntegrateWell(Batch,init_state,T=T,ns=ns,return_all=True,log_time=log_time)
