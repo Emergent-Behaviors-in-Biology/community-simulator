@@ -30,13 +30,17 @@ class Community:
             self.R.index = resource_names
             
         self.R0 = self.R.copy()
+        self.S, self.n_wells = np.shape(self.N)
+        self.M = np.shape(self.R)[0]
+        self.dNdt, self.dRdt = dynamics
+        
         self.params = params.copy()
         for item in self.params:
             if isinstance(self.params[item],pd.DataFrame):
                 self.params[item]=self.params[item].values.squeeze()
-        self.dNdt, self.dRdt = dynamics
-        self.S, self.n_wells = np.shape(self.N)
-        self.M = np.shape(self.R)[0]
+        if 'D' not in params:
+            self.params['D'] = np.ones((self.M,self.M))
+            self.params['e'] = 1
         
         self.scale = scale
             
@@ -78,7 +82,7 @@ class Community:
         self.R = pd.DataFrame(y_out[self.S:,:],
                               index = self.R.index, columns = self.R.keys())
         
-    def Passage(self,f_in,scale=None,include_resource = True):
+    def Passage(self,f_in,scale=None,refresh_resource=True):
         if scale == None:
             scale = self.scale #Use scale from initialization by default
         f = np.asarray(f_in) #Allow for f to be a dataframe
@@ -90,16 +94,17 @@ class Community:
                     N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale
             
         self.N = pd.DataFrame(N, index = self.N.index, columns = self.N.keys())
-        if include_resource:
-            self.R = self.R0 + pd.DataFrame(np.dot(self.R,f.T), index = self.R.index, columns = self.R.keys())
+        self.R = pd.DataFrame(np.dot(self.R,f.T), index = self.R.index, columns = self.R.keys())
+        if refresh_resource:
+            self.R = self.R+self.R0
         
-    def RunExperiment(self,f,T,np,group='Well',scale=10**9):
+    def RunExperiment(self,f,T,np,group='Well',scale=10**9,refresh_resource=True):
         t = 0
         N_traj = TimeStamp(self.N,t,group=group)
         R_traj = TimeStamp(self.R,t,group=group)
 
         for j in range(np):
-            self.Passage(f,scale=scale)
+            self.Passage(f,scale=scale,refresh_resource=refresh_resource)
             self.Propagate(T)
             t += T
             N_traj = N_traj.append(TimeStamp(self.N,t,group=group))
@@ -113,7 +118,7 @@ class Community:
             WellName = self.N.keys()[0]
         N_well = self.N.copy()[WellName] * f0
         R_well = self.R.copy()[WellName]
-        t, out = IntegrateWell(self,N_well.append(R_well),
+        t, out = IntegrateWell(self,N_well.append(R_well).values,
                                T=T,ns=ns,return_all=True,log_time=log_time)
         f, axs = plt.subplots(2,sharex=True)
         Ntraj = out[:,:self.S]
