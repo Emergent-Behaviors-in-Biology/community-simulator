@@ -104,13 +104,12 @@ def cost_function(log_args,params):
     return np.sum((args-RHS)**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
-def cost_function_bounded(log_args,params,bounds):
+def cost_function_bounded(log_args,params,upper_bound):
     args = np.exp(log_args)
     b1 = test_bound_1(log_args,params)
     b2 = test_bound_2(log_args,params)
     log_arg_max = np.max(log_args)
-    log_arg_min = np.min(log_args)
-    if np.isfinite(b1) and np.isfinite(b2) and (log_arg_max < bounds[1]) and (log_arg_min > bounds[0]):
+    if np.isfinite(b1) and np.isfinite(b2) and (log_arg_max < upper_bound):
         if b1>0 and b2>0:
             RHS_R = sigR(args,params)*fR(args,params)*w1(DelR(args,params))
             RHS_N = sigN(args,params)*fN(args,params)*w1(DelN(args,params))
@@ -157,9 +156,10 @@ def CavityComparison_Gauss(params,S,n_demes=1):
            'r':r_combined,'w':w_combined}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=8000,
-                 log_time=True,plotting=True,com_params={},log_bounds=[-15,15]):
-    logmin,logmax = log_bounds
+def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=10,n_iter=800,
+                 log_time=False,plotting=True,com_params={},log_bound=15,
+                 cutoff=1e-10,eps=np.inf):
+    t = np.arange(n_iter+1)*T
     [N0,R0,X0], com_params_new = CavityComparison_Gauss(params,S)
     M = np.shape(R0)[0]
     Q = np.shape(X0)[0]
@@ -175,10 +175,16 @@ def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=80
     else:
         #If user has passed an initial condition, remove very low abundance
         #species to ensure stability
-        init_state[init_state<1e-20] = 0
+        init_state[init_state<cutoff] = 0
         
     #Integrate
-    t, out = essentialtools.IntegrateWell(Batch,init_state,T=T,ns=ns,return_all=True,log_time=log_time)
+    y = init_state
+    out = [y]
+    for k in range(n_iter):
+        y = essentialtools.IntegrateWell(Batch,y,T=T,ns=100,log_time=log_time)
+        y[y<cutoff] = 0
+        out.append(y)
+    out = np.asarray(out)
     
     #Extract results into separate vectors for the three levels
     Ntraj = out[:,:S]
@@ -191,13 +197,13 @@ def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=80
     Xfinal = Xtraj[-1,:]
     
     #Compute moments for feeding in to cavity calculation
-    args0 = [np.mean(Rfinal), np.mean(Nfinal), np.mean(Xfinal),
-            np.mean(Rfinal**2), np.mean(Nfinal**2), np.mean(Xfinal**2)]
+    args0 = np.asarray([np.mean(Rfinal), np.mean(Nfinal), np.mean(Xfinal),
+                        np.mean(Rfinal**2), np.mean(Nfinal**2), np.mean(Xfinal**2)])+1e-10
     
-    out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,[logmin,logmax]))
+    out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
     args_cav = np.exp(out.x)
     
-    if plotting:
+    if plotting and out.fun<eps:
         f, axs = plt.subplots(3,2,figsize=(12,10))
         axs[0,0].plot(t,Ntraj)
         axs[1,0].plot(t,Rtraj)
@@ -216,9 +222,9 @@ def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=80
         bins = np.linspace(0,5,20)
         xvec = np.linspace(0,5,100)
         dbin = bins[1]-bins[0]
-        axs[1,1].hist(Rfinal[Rfinal>1e-10],bins=bins,alpha=0.5,color=sns.color_palette()[0],label='Resource')
-        axs[1,1].hist(Nfinal[Nfinal>1e-10],bins=bins,alpha=0.5,color=sns.color_palette()[1],label='Consumer')
-        axs[1,1].hist(Xfinal[Xfinal>1e-10],bins=bins,alpha=0.5,color=sns.color_palette()[2],label='Predator')
+        axs[1,1].hist(Rfinal[Rfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[0],label='Resource')
+        axs[1,1].hist(Nfinal[Nfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[1],label='Consumer')
+        axs[1,1].hist(Xfinal[Xfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[2],label='Predator')
         axs[1,1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M*dbin,color=sns.color_palette()[0])
         axs[1,1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S*dbin,color=sns.color_palette()[1])
         axs[1,1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q*dbin,color=sns.color_palette()[2])
@@ -236,3 +242,32 @@ def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=80
     
         
     return [Nfinal,Rfinal,Xfinal], com_params, args0, out
+
+def GetSteadyState(params,S,cutoff=1e-10,plotting=False,n_iter=800,postprocess=False,trials=5,eps=0.01):
+    fun = np.inf
+    k=0
+    while fun > eps and k < trials:
+        [N,R,X], com_params, args0, out = RunCommunity(params,S,plotting=plotting,n_iter=n_iter,cutoff=cutoff,eps=eps)
+        fun = out.fun
+        k+=1
+    
+    args_cav = np.exp(out.x)
+    
+    if postprocess:
+        M = len(R)
+        Q = len(X)
+        results_num = {'SphiN':np.sum(N>cutoff),
+                       'MphiR':np.sum(R>cutoff),
+                       'QphiX':np.sum(X>cutoff),
+                       'M<R>':M*args0[0],
+                       'S<N>':S*args0[1],
+                       'Q<X>':Q*args0[2]}
+        results_cav = {'SphiN':S*phiN(args_cav,params),
+                       'MphiR':M*phiR(args_cav,params),
+                       'QphiX':Q*phiX(args_cav,params),
+                       'M<R>':M*args_cav[0],
+                       'S<N>':S*args_cav[1],
+                       'Q<X>':Q*args_cav[2]}
+        return results_num, results_cav, [N,R,X], out
+    else:
+        return args_cav, out.fun
