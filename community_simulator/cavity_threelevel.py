@@ -8,7 +8,7 @@ Created on Thu Nov  9 14:51:13 2017
 
 import numpy as np
 from scipy.stats import norm
-from community_simulator import Community, models, essentialtools
+from community_simulator import Community, essentialtools, usertools
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.optimize as opt
@@ -24,30 +24,24 @@ def w2(Delta):
 #Standard deviations of invasion growth rates
 def sigX(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return np.sqrt(sigu**2 + sigd**2*eta*qN)
+    return np.sqrt(params['sigu']**2 + params['sigd']**2*params['eta']*qN)
 def sigN(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return np.sqrt(sigm**2 + sigc**2*gamma*qR+sigd**2*qX)
+    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['gamma']*qR+params['sigd']**2*qX)
 def sigR(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return np.sqrt(sigK**2 + sigc**2*qN)
+    return np.sqrt(params['sigK']**2 + params['sigc']**2*qN)
 
 #Mean invasion growth rates normalized by standard deviation
 def DelX(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (eta*mud*N-u)/sigX(args,params)
+    return (params['eta']*params['mud']*N-params['u'])/sigX(args,params)
 def DelN(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (gamma*muc*R-m-mud*X)/sigN(args,params)
+    return (params['gamma']*params['muc']*R-params['m']-params['mud']*X)/sigN(args,params)
 def DelR(args,params):
     R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (K-muc*N)/sigR(args,params)
+    return (params['K']-params['muc']*N)/sigR(args,params)
 
 #Fraction of species that survive in steady state
 def phiX(args,params):
@@ -59,17 +53,17 @@ def phiR(args,params):
 
 #Factors for converting invasion growth rate to steady-state abundance
 def fX(args,params):
-    R,N,X,qR,qN,qX = args
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return sigc**2*(gamma*eta*phiR(args,params)+phiX(args,params)
-                    -eta*phiN(args,params))/(eta*sigd**2*(eta*phiN(args,params)-phiX(args,params)))
+    return params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
+                              -params['eta']*phiN(args,params))/(params['eta']*params['sigd']**2
+                                                                 *(params['eta']*phiN(args,params)
+                                                                   -phiX(args,params)))
 def fN(args,params):
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return (eta-phiX(args,params)/phiN(args,params))/(sigc**2*(gamma*eta*phiR(args,params)+phiX(args,params)
-                                                               -eta*phiN(args,params)))
+    return ((params['eta']-phiX(args,params)/phiN(args,params))/
+            (params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
+                                -params['eta']*phiN(args,params))))
 def fR(args,params):
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return 1+(phiX(args,params)/(gamma*eta*phiR(args,params)))-(phiN(args,params)/(gamma*phiR(args,params)))
+    return (1+(phiX(args,params)/(params['gamma']*params['eta']*phiR(args,params)))
+            -(phiN(args,params)/(params['gamma']*phiR(args,params))))
 
 #Distributions of steady-state abundances
 def Xa(args,params,Xvec=np.linspace(0,10,100)):
@@ -90,12 +84,10 @@ def chiR(args,params):
 #Test satisfaction of competitive exclusion bound for consumers and predators
 def test_bound_1(log_args,params):
     args = np.exp(log_args)
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return gamma*phiR(args,params)-phiN(args,params)+phiX(args,params)/eta
+    return params['gamma']*phiR(args,params)-phiN(args,params)+phiX(args,params)/params['eta']
 def test_bound_2(log_args,params):
     args = np.exp(log_args)
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = params
-    return eta*phiN(args,params)-phiX(args,params)
+    return params['eta']*phiN(args,params)-phiX(args,params)
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(log_args,params):
@@ -135,17 +127,22 @@ def cost_function_bounded(log_args,params,bounds):
     else:
         return np.inf
     
+#Generate dynamics for McArthur CRM
+def dNdt_CRM(N,R,params):
+    return N*(np.dot(params['c'],(R*params['w']))-params['m'])
+def dRdt_CRM(N,R,params):
+    return params['r']*R*(1-params['Kinv']*R)-R*np.dot(params['c'].T,N)
+    
 #Generate parameters for McArthur CRM from cavity parameters
 def CavityComparison_Gauss(params,S,n_demes=1):
-    K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta = np.asarray(params,dtype=float)
-    M = int(round(gamma*S))
-    Q = int(round(S/eta))
+    M = int(round(params['gamma']*S))
+    Q = int(round(S/params['eta']))
     
-    c_ibeta = muc/S + np.random.randn(S,M)*sigc/np.sqrt(S)
-    d_aj = mud/Q + np.random.randn(Q,S)*sigd/np.sqrt(Q)
-    m_i = m + np.random.randn(S)*sigm
-    u_a = u + np.random.randn(Q)*sigu
-    K_alpha = K + np.random.randn(M)*sigK
+    c_ibeta = params['muc']/S + np.random.randn(S,M)*params['sigc']/np.sqrt(S)
+    d_aj = params['mud']/Q + np.random.randn(Q,S)*params['sigd']/np.sqrt(Q)
+    m_i = params['m'] + np.random.randn(S)*params['sigm']
+    u_a = params['u'] + np.random.randn(Q)*params['sigu']
+    K_alpha = params['K'] + np.random.randn(M)*params['sigK']
     
     c_combined = np.hstack((c_ibeta,-d_aj.T))
     r_combined = np.hstack((K_alpha,-u_a))
@@ -160,8 +157,8 @@ def CavityComparison_Gauss(params,S,n_demes=1):
            'r':r_combined,'w':w_combined}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=True,
-                 com_params={},log_bounds=[-15,15]):
+def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=100,ns=8000,
+                 log_time=True,plotting=True,com_params={},log_bounds=[-15,15]):
     logmin,logmax = log_bounds
     [N0,R0,X0], com_params_new = CavityComparison_Gauss(params,S)
     M = np.shape(R0)[0]
@@ -170,17 +167,15 @@ def RunCommunity(params,S,init_state=[],T=100,ns=8000,log_time=True,plotting=Tru
     #Generate new parameter set unless user has passed one
     if len(com_params)==0:
         com_params = com_params_new
-    Batch = Community([N0,np.vstack((R0,X0))],[models.dNdt_CRM,models.dRdt_CRM],com_params)
+    Batch = Community([N0,np.vstack((R0,X0))],dynamics,com_params)
     
     #Use standard initial condition unless user has passed one
     if len(init_state)==0:
         init_state = np.hstack((N0[:,0],R0[:,0],X0[:,0]))
     else:
         #If user has passed an initial condition, remove very low abundance
-        #species, and attempt an invasion by all species. This ensures stability
-        #and convergence to true steady state
+        #species to ensure stability
         init_state[init_state<1e-20] = 0
-        init_state = init_state + np.hstack((N0[:,0],1e-3*R0[:,0],X0[:,0]))
         
     #Integrate
     t, out = essentialtools.IntegrateWell(Batch,init_state,T=T,ns=ns,return_all=True,log_time=log_time)
