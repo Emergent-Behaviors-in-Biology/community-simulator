@@ -8,7 +8,6 @@ Created on Thu Oct 19 11:11:49 2017
 
 import numpy as np
 import pandas as pd
-from . import models
 from numpy.random import dirichlet
 
 #Default parameters for consumer matrix
@@ -121,9 +120,9 @@ def AddLabels(N0_values,R0_values,c):
     return N0, R0
 
 def MakeResourceDynamics(response='type I',regulation='independent',replenishment='off'):
-    sigma = {'type I': lambda x,params: x,
-             'type II': lambda x,params: x/(1+x/params['K']),
-             'type III': lambda x,params: x**params['n']/(1+(x/params['K'])**params['n'])
+    sigma = {'type I': lambda R,params: params['c']*R,
+             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
+             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
             }
     
     u = {'independent': lambda x,params: 1.,
@@ -134,10 +133,10 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
     
     h = {'off': lambda R,params: 0.,
          'renew': lambda R,params: (params['R0']-R)/params['tau'],
-         'non-renew': lambda R,params: params['r']*R*(params['R0']-R)/params['R0']}
+         'non-renew': lambda R,params: params['r']*R*(params['R0']-R)}
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
-                             *params['w']*sigma[response](params['c']*R,params))
+                             *params['w']*sigma[response](R,params))
     F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
     
     return lambda N,R,params: (h[replenishment](R,params)
@@ -145,9 +144,9 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
                                +(F_out(R,params)/params['w']).T.dot(N))
 
 def MakeConsumerDynamics(response='type I',regulation='independent',replenishment='off'):
-    sigma = {'type I': lambda x,params: x,
-             'type II': lambda x,params: x/(1+x/params['K']),
-             'type III': lambda x,params: x**params['n']/(1+(x/params['K'])**params['n'])
+    sigma = {'type I': lambda R,params: params['c']*R,
+             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
+             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
             }
     
     u = {'independent': lambda x,params: 1.,
@@ -157,7 +156,7 @@ def MakeConsumerDynamics(response='type I',regulation='independent',replenishmen
         }
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
-                             *params['w']*sigma[response](params['c']*R,params))
+                             *params['w']*sigma[response](R,params))
     F_growth = lambda R,params: params['e']*F_in(R,params)
     
     return lambda N,R,params: params['g']*N*(np.sum(F_growth(R,params),axis=1)-params['m'])
