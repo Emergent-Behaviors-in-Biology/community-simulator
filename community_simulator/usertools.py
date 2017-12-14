@@ -64,9 +64,9 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    c.loc['F'+str(k),'T'+str(j)] = c.loc['F'+str(k),'T'+str(j)].values + params['q']/params['MA'][k]
+                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + params['q']/params['MA'][k]
                 else:
-                    c.loc['F'+str(k),'T'+str(j)] = c.loc['F'+str(k),'T'+str(j)].values - params['q']/(M-params['MA'][k])
+                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values - params['q']/(M-params['MA'][k])
                     
     #Perform binary sampling
     elif kind == 'Binary':
@@ -81,7 +81,7 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
                 else:
                     p = (1./M) - params['q']/(M-params['MA'][k])
                     
-                c.loc['F'+str(k),'T'+str(j)] = (c.loc['F'+str(k),'T'+str(j)].values 
+                c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
                                                 + BinaryRandomMatrix(params['SA'][k],params['MA'][j],p))
         #Sample uniform binary random matrix for generalists  
         p = 1./M
@@ -133,7 +133,8 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
     
     h = {'off': lambda R,params: 0.,
          'renew': lambda R,params: (params['R0']-R)/params['tau'],
-         'non-renew': lambda R,params: params['r']*R*(params['R0']-R)}
+         'non-renew': lambda R,params: params['r']*R*(params['R0']-R),
+         'predator': lambda R,params: params['r']*R*(params['R0']-R)-params['u']*R}
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
                              *params['w']*sigma[response](R,params))
