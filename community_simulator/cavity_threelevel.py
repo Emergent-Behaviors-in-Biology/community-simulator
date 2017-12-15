@@ -8,10 +8,11 @@ Created on Thu Nov  9 14:51:13 2017
 
 import numpy as np
 from scipy.stats import norm
-from community_simulator import Community, essentialtools, usertools
+from community_simulator import Community,essentialtools,usertools,visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.optimize as opt
+import pandas as pd
 
 #Moments of truncated Gaussian
 def w0(Delta):
@@ -126,88 +127,88 @@ def cost_function_bounded(log_args,params,upper_bound):
     else:
         return np.inf
     
-#Generate dynamics for McArthur CRM
-def dNdt_CRM(N,R,params):
-    return N*(np.dot(params['c'],(R*params['w']))-params['m'])
-def dRdt_CRM(N,R,params):
-    return params['r']*R*(1-params['Kinv']*R)-R*np.dot(params['c'].T,N)
+#Generate dynamics for McArthur CRM with predator
+assumptions = {'replenishment':'predator'}
+def dNdt(N,R,params):
+    return usertools.MakeConsumerDynamics(**assumptions)(N,R,params)
+def dRdt(N,R,params):
+    return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
     
 #Generate parameters for McArthur CRM from cavity parameters
-def CavityComparison_Gauss(params,S,n_demes=1):
+def CavityComparison_Gauss(params,S,n_wells=1,Stot=100):
     M = int(round(params['gamma']*S))
     Q = int(round(S/params['eta']))
     
-    c_ibeta = params['muc']/S + np.random.randn(S,M)*params['sigc']/np.sqrt(S)
-    d_aj = params['mud']/Q + np.random.randn(Q,S)*params['sigd']/np.sqrt(Q)
-    m_i = params['m'] + np.random.randn(S)*params['sigm']
-    u_a = params['u'] + np.random.randn(Q)*params['sigu']
-    K_alpha = params['K'] + np.random.randn(M)*params['sigK']
+    c_ibeta = params['muc']/S + np.random.randn(Stot,Stot)*params['sigc']/np.sqrt(S)
+    d_aj = params['mud']/Q + np.random.randn(Stot,Stot)*params['sigd']/np.sqrt(Q)
+    m_i = params['m'] + np.random.randn(Stot)*params['sigm']
+    u_a = params['u'] + np.random.randn(Stot)*params['sigu']
+    K_alpha = params['K'] + np.random.randn(Stot)*params['sigK']
     
     c_combined = np.hstack((c_ibeta,-d_aj.T))
-    r_combined = np.hstack((K_alpha,-u_a))
-    Kinv_combined = np.hstack((1./K_alpha,np.zeros(Q)))
+    r_combined = np.hstack((np.ones(Stot),np.zeros(Stot)))
+    K_combined = np.hstack((K_alpha,np.zeros(Stot)))
     w_combined = np.ones(len(r_combined))
+    u_combined = np.hstack((np.zeros(Stot),u_a))
     
-    N0 = np.ones((S,n_demes))*1e-3/S
-    R0 = np.ones((M,n_demes))
-    X0 = np.ones((Q,n_demes))*1e-3/Q
+    N0 = np.zeros((Stot,n_wells))
+    R0 = np.zeros((Stot,n_wells))
+    X0 = np.zeros((Stot,n_wells))
+    
+    for k in range(n_wells):
+        N0[np.random.choice(Stot,size=S,replace=False),k]=1e-3/S
+        R0[np.random.choice(Stot,size=M,replace=False),k]=1
+        X0[np.random.choice(Stot,size=Q,replace=False),k]=1e-3/Q 
+    
+    well_names = ['W'+str(k) for k in range(n_wells)]
+    species_names = ['S'+str(k) for k in range(Stot)]
+    type_names = ['Resource']*Stot+['Predator']*Stot
+    resource_names = 2*range(Stot)
+    resource_index = [type_names,resource_names]
+    N0 = pd.DataFrame(N0,index=species_names,columns=well_names)
+    RX0 = pd.DataFrame(np.vstack((R0,X0)),index=resource_index,columns=well_names)
 
-    return [N0,R0,X0], {'c':c_combined,'m':m_i,'Kinv':Kinv_combined,
-           'r':r_combined,'w':w_combined}
+    return [N0,RX0], {'S':S,'Q':Q,'M':M,'c':c_combined,'m':m_i,'R0':K_combined,
+           'r':r_combined,'w':w_combined,'u':u_combined,'g':1.}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=10,n_iter=800,
-                 log_time=False,plotting=True,com_params={},log_bound=15,
-                 cutoff=1e-10,eps=np.inf):
-    t = np.arange(n_iter+1)*T
-    [N0,R0,X0], com_params_new = CavityComparison_Gauss(params,S)
-    M = np.shape(R0)[0]
-    Q = np.shape(X0)[0]
+def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound=15,
+                 cutoff=1e-10,eps=np.inf,trials=1,postprocess=False,Stot=100,run_number=0):
+    assert Stot>=S, 'S must be less than or equal to Stot.'
+    
+    [N0,RX0], com_params_new = CavityComparison_Gauss(params,S,n_wells=trials,Stot=Stot)
+    S = com_params_new['S']
+    Q = com_params_new['Q']
+    M = com_params_new['M']
     
     #Generate new parameter set unless user has passed one
     if len(com_params)==0:
         com_params = com_params_new
-    Batch = Community([N0,np.vstack((R0,X0))],dynamics,com_params)
     
-    #Use standard initial condition unless user has passed one
-    if len(init_state)==0:
-        init_state = np.hstack((N0[:,0],R0[:,0],X0[:,0]))
-    else:
-        #If user has passed an initial condition, remove very low abundance
-        #species to ensure stability
-        init_state[init_state<cutoff] = 0
-        
-    #Integrate
-    y = init_state
-    out = [y]
-    for k in range(n_iter):
-        y = essentialtools.IntegrateWell(Batch,y,T=T,ns=100,log_time=log_time)
-        y[y<cutoff] = 0
-        out.append(y)
-    out = np.asarray(out)
-    
-    #Extract results into separate vectors for the three levels
-    Ntraj = out[:,:S]
-    Rtraj = out[:,S:S+Q]
-    Xtraj = out[:,S+Q:]
+    #Create Community class instance and run  
+    TestPlate = Community([N0,RX0],[dNdt,dRdt],com_params)
+    Ntraj,RXtraj = TestPlate.RunExperiment(np.eye(np.shape(N0)[1]),T,n_iter,
+                                           refresh_resource=False,scale=1./cutoff)
+    Rtraj = RXtraj['Resource']
+    Xtraj = RXtraj['Predator']
     
     #Find final states
-    Rfinal = Rtraj[-1,:]
-    Nfinal = Ntraj[-1,:]
-    Xfinal = Xtraj[-1,:]
+    Rfinal = TestPlate.R.loc['Resource'].values.reshape(-1)
+    Nfinal = TestPlate.N.values.reshape(-1)
+    Xfinal = TestPlate.R.loc['Predator'].values.reshape(-1)
     
     #Compute moments for feeding in to cavity calculation
     args0 = np.asarray([np.mean(Rfinal), np.mean(Nfinal), np.mean(Xfinal),
                         np.mean(Rfinal**2), np.mean(Nfinal**2), np.mean(Xfinal**2)])+1e-10
-    
     out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
     args_cav = np.exp(out.x)
     
-    if plotting and out.fun<eps:
+    if plotting and out.fun<=eps:
+        plotting_well = N0.keys()[0]
         f, axs = plt.subplots(3,2,figsize=(12,10))
-        axs[0,0].plot(t,Ntraj)
-        axs[1,0].plot(t,Rtraj)
-        axs[2,0].plot(t,Xtraj)
+        visualization.StackPlot(Ntraj.loc(axis=0)[:,plotting_well].T,ax=axs[0,0])
+        visualization.StackPlot(Rtraj.loc(axis=0)[:,plotting_well].T,ax=axs[1,0])
+        visualization.StackPlot(Xtraj.loc(axis=0)[:,plotting_well].T,ax=axs[2,0])
         axs[2,0].set_xlabel('Time')
         axs[0,0].set_ylabel('Consumer Abundance')
         axs[1,0].set_ylabel('Resource Abundance')
@@ -240,25 +241,10 @@ def RunCommunity(params,S,init_state=[],dynamics=[dNdt_CRM,dRdt_CRM],T=10,n_iter
         axs[2,1].set_xlabel('Non-extinct Species Abundance')
         plt.legend()
     
-        
-    return [Nfinal,Rfinal,Xfinal], com_params, args0, out
-
-def GetSteadyState(params,S,cutoff=1e-10,plotting=False,n_iter=800,postprocess=False,trials=5,eps=0.01):
-    fun = np.inf
-    k=0
-    while fun > eps and k < trials:
-        [N,R,X], com_params, args0, out = RunCommunity(params,S,plotting=plotting,n_iter=n_iter,cutoff=cutoff,eps=eps)
-        fun = out.fun
-        k+=1
-    
-    args_cav = np.exp(out.x)
-    
     if postprocess:
-        M = len(R)
-        Q = len(X)
-        results_num = {'SphiN':np.sum(N>cutoff),
-                       'MphiR':np.sum(R>cutoff),
-                       'QphiX':np.sum(X>cutoff),
+        results_num = {'SphiN':np.sum(Nfinal>cutoff)*1./trials,
+                       'MphiR':np.sum(Rfinal>cutoff)*1./trials,
+                       'QphiX':np.sum(Xfinal>cutoff)*1./trials,
                        'M<R>':M*args0[0],
                        'S<N>':S*args0[1],
                        'Q<X>':Q*args0[2]}
@@ -268,6 +254,31 @@ def GetSteadyState(params,S,cutoff=1e-10,plotting=False,n_iter=800,postprocess=F
                        'M<R>':M*args_cav[0],
                        'S<N>':S*args_cav[1],
                        'Q<X>':Q*args_cav[2]}
-        return results_num, results_cav, [N,R,X], out
+        return results_num, results_cav, out
     else:
-        return args_cav, out.fun
+        Stot = len(N0)
+        new_index = [Stot*['Consumer'],N0.index]
+        TestPlate.N.index = new_index
+        final_state = TestPlate.N.append(TestPlate.R)
+        final_state['Run Number']=run_number
+        final_state.set_index('Run Number',append=True,inplace=True)
+        final_state = final_state.reorder_levels(['Run Number',0,1])
+        
+        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<X>','<R^2>','<N^2>','<X^2>'],index=[run_number])
+        data.index = data.index.rename('Run Number')
+        data['fun']=out.fun
+        for item in params.keys():
+            data[item]=params[item]
+        
+        
+        sim_index = [Stot*['m']+Stot*['R0']+Stot*['u'],3*range(Stot)]
+        sim_params = pd.DataFrame(np.hstack((com_params['m'],com_params['R0'][:M],com_params['u'][M:])),columns=data.index,index=sim_index).T
+        for item in ['S','M','Q']:
+            sim_params[item]=com_params_new[item]
+            
+        c_matrix = pd.DataFrame(com_params['c'],columns=TestPlate.R.index,index=N0.index)
+        c_matrix['Run Number']=run_number
+        c_matrix.set_index('Run Number',append=True,inplace=True)
+        c_matrix = c_matrix.reorder_levels(['Run Number',0])
+        
+        return data, final_state, sim_params, c_matrix
