@@ -163,7 +163,7 @@ def CavityComparison_Gauss(params,S,n_wells=1,Stot=100):
     well_names = ['W'+str(k) for k in range(n_wells)]
     species_names = ['S'+str(k) for k in range(Stot)]
     type_names = ['Resource']*Stot+['Predator']*Stot
-    resource_names = 2*range(Stot)
+    resource_names = 2*list(range(Stot))
     resource_index = [type_names,resource_names]
     N0 = pd.DataFrame(N0,index=species_names,columns=well_names)
     RX0 = pd.DataFrame(np.vstack((R0,X0)),index=resource_index,columns=well_names)
@@ -271,7 +271,7 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
             data[item]=params[item]
         
         
-        sim_index = [Stot*['m']+Stot*['R0']+Stot*['u'],3*range(Stot)]
+        sim_index = [Stot*['m']+Stot*['R0']+Stot*['u'],3*list(range(Stot))]
         sim_params = pd.DataFrame(np.hstack((com_params['m'],com_params['R0'][:M],com_params['u'][M:])),columns=data.index,index=sim_index).T
         for item in ['S','M','Q']:
             sim_params[item]=com_params_new[item]
