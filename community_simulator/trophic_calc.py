@@ -19,7 +19,7 @@ folder = '/project/biophys/trophic_structure/dataDec17/'
 params = {'K':1.,
           'sigK':0.1,
           'muc':1.,
-          'sigc':0.01+0.1*args.task_ID,
+          'sigc':0.1+0.01*(args.task_ID-1),
           'mud':1.,
           'sigd':0.1,
           'm':0.5,
@@ -33,7 +33,7 @@ S = 50
 Kvec = np.linspace(0,1.5,3)
 for j in range(len(Kvec)):
     params['K']=Kvec[j]
-    data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=24,run_number=j)
+    data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=3,run_number=j,n_iter=10)
     
     if j==0:
         final_state = final_state_new.copy()
