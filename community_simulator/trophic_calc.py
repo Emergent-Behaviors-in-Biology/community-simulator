@@ -1,4 +1,4 @@
-#!/projectnb/biophys/marsland/conda_envs python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Fri Dec 15 14:32:09 2017
