@@ -30,24 +30,24 @@ params = {'K':1.,
           'eta':1.}
 S = 50
 
-Kvec = np.linspace(0,1.5,3)
+Kvec = np.linspace(0,1.5,30)
 for j in range(len(Kvec)):
     params['K']=Kvec[j]
-    data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=3,run_number=j,n_iter=10)
+    data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=12,run_number=j,n_iter=800)
     
     if j==0:
         final_state = final_state_new.copy()
         data = data_new.copy()
         sim_params = sim_params_new.copy()
-        c_matrix = c_matrix_new.copy()
+        #c_matrix = c_matrix_new.copy()
     else:
         final_state = final_state.append(final_state_new.copy())
         data = data.append(data_new.copy())
         sim_params = sim_params.append(sim_params_new.copy())
-        c_matrix = c_matrix.append(c_matrix_new.copy())
+        #c_matrix = c_matrix.append(c_matrix_new.copy())
         
 namelist = ['finalstate','data','simparams','cmatrix']
 j=0
-for item in [final_state,data,sim_params,c_matrix]:
+for item in [final_state,data,sim_params]:
     item.to_csv(folder+namelist[j]+'_'+str(args.task_ID)+'.csv')
     j+=1
