@@ -87,16 +87,33 @@ class Community:
             scale = self.scale #Use scale from initialization by default
         f = np.asarray(f_in) #Allow for f to be a dataframe
         N_tot = np.sum(self.N)
+        R_tot = np.sum(self.R)
         N = np.zeros(np.shape(self.N))
+        
+        #Perform multinomial sampling on each well to simulate passaging a
+        #finite fraction of the discrete collection of cells
         for k in range(self.n_wells):
             for j in range(self.n_wells):
                 if f[k,j] > 0 and N_tot[j] > 0:
-                    N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale
-            
+                    N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale  
         self.N = pd.DataFrame(N, index = self.N.index, columns = self.N.keys())
-        self.R = pd.DataFrame(np.dot(self.R,f.T), index = self.R.index, columns = self.R.keys())
+        
+        #In batch culture, there is no need to do multinomial sampling on the resources,
+        #since they are externally replenished before they cause numerical problems
         if refresh_resource:
+            self.R = pd.DataFrame(np.dot(self.R,f.T), index = self.R.index, columns = self.R.keys())
             self.R = self.R+self.R0
+            
+        #In continuous culture, it is useful to eliminate the resources that are
+        #going extinct, to avoid numerical instability
+        else:
+            R_tot = np.sum(self.R)
+            R = np.zeros(np.shape(self.R))
+            for k in range(self.n_wells):
+                for j in range(self.n_wells):
+                    if f[k,j] > 0 and N_tot[j] > 0:
+                        R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
+            self.R = pd.DataFrame(R, index = self.R.index, columns = self.R.keys())
         
     def RunExperiment(self,f,T,np,group='Well',scale=10**9,refresh_resource=True):
         t = 0
