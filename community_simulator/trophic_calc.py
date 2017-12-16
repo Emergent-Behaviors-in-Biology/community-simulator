@@ -44,7 +44,7 @@ for j in range(len(Kvec)):
     for m in range(len(etavec)):
         params['K']=Kvec[j]
         params['eta']=etavec[m]
-        data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=16,run_number=j,n_iter=800)
+        data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=36,run_number=j,n_iter=800)
     
         if j==0 and k==0:
             final_state = final_state_new.copy()
@@ -69,18 +69,18 @@ for j in range(len(mucvec)):
     for m in range(len(mudvec)):
         params['muc']=mucvec[j]
         params['mud']=mudvec[m]
-        data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=28,run_number=j,n_iter=800)
+        data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=36,run_number=j,n_iter=800)
         
         if j==0 and k==0:
             final_state = final_state_new.copy()
             data = data_new.copy()
             sim_params = sim_params_new.copy()
-        #c_matrix = c_matrix_new.copy()
+            #c_matrix = c_matrix_new.copy()
         else:
             final_state = final_state.append(final_state_new.copy())
             data = data.append(data_new.copy())
             sim_params = sim_params.append(sim_params_new.copy())
-#c_matrix = c_matrix.append(c_matrix_new.copy())
+            #c_matrix = c_matrix.append(c_matrix_new.copy())
 
 namelist = ['finalstate','data','simparams','cmatrix']
 j=0
