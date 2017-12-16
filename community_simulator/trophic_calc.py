@@ -14,7 +14,7 @@ import distutils.dir_util
 parser = argparse.ArgumentParser()
 parser.add_argument("task_ID", type=int)
 parser.add_argument("param", type=str)
-parser.add_argument("scale", type=double)
+parser.add_argument("scale", type=float)
 parser.add_argument("ns", type=int)
 args = parser.parse_args()
 
@@ -36,11 +36,12 @@ params = {'K':1.,
 
 params[args.param] = args.scale*args.task_ID
 
-S = 50
+S = 30
 
 Kvec = np.linspace(0,1.5,args.ns)
 etavec = np.linspace(0.3,5,args.ns)
 for j in range(len(Kvec)):
+    print('K='+Kvec[j])
     for m in range(len(etavec)):
         params['K']=Kvec[j]
         params['eta']=etavec[m]
@@ -66,6 +67,7 @@ for item in [final_state,data,sim_params]:
 mucvec = np.linspace(0.5,2.5,args.ns)
 mudvec = np.linspace(0.5,2,args.ns)
 for j in range(len(mucvec)):
+    print('muc='+mucvec[j])
     for m in range(len(mudvec)):
         params['muc']=mucvec[j]
         params['mud']=mudvec[m]
