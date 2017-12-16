@@ -30,10 +30,10 @@ params = {'K':1.,
           'eta':1.}
 S = 50
 
-Kvec = np.linspace(0,1.5,30)
+Kvec = np.linspace(0,1.5,3)
 for j in range(len(Kvec)):
     params['K']=Kvec[j]
-    data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=12,run_number=j,n_iter=800)
+    data_new, final_state_new, sim_params_new, c_matrix_new= RunCommunity(params,S,trials=12,run_number=j,n_iter=100)
     
     if j==0:
         final_state = final_state_new.copy()
