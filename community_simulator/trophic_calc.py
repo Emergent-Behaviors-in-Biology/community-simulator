@@ -24,7 +24,7 @@ distutils.dir_util.mkpath(folder)
 params = {'K':1.,
           'sigK':0.,
           'muc':1.,
-          'sigc':0.1
+          'sigc':0.1,
           'mud':1.,
           'sigd':0.1,
           'm':0.5,
