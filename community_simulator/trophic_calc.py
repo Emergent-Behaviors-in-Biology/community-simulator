@@ -19,14 +19,14 @@ parser.add_argument("scale", type=float)
 parser.add_argument("ns", type=int)
 args = parser.parse_args()
 
-folder = 'test'
-#folder = '/project/biophys/trophic_structure/dataDec17/vary_'+args.param
+#folder = 'test'
+folder = '/project/biophys/trophic_structure/dataDec17/vary_'+args.param
 distutils.dir_util.mkpath(folder)
 namelist = ['data','finalstate','simparams','cmatrix']
 filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_K_eta'+'.xlsx' 
                 for q in range(len(namelist))]
 ic = [0,[0,1,2],0,[0,1]]
-h = [0,0,[0,1],0]
+h = [0,0,[0,1],[0,1]]
 
 n_iter = 800
 trials = 27
@@ -48,7 +48,7 @@ params[args.param] = args.scale*args.task_ID
 
 S = 30
 
-Kvec = np.linspace(0,1.5,args.ns)
+Kvec = np.linspace(0.2,1.5,args.ns)
 etavec = np.linspace(0.3,5,args.ns)
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
