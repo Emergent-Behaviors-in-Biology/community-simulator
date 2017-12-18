@@ -107,6 +107,7 @@ class Community:
         #In continuous culture, it is useful to eliminate the resources that are
         #going extinct, to avoid numerical instability
         else:
+            self.R[self.R<0] = 0
             R_tot = np.sum(self.R)
             R = np.zeros(np.shape(self.R))
             for k in range(self.n_wells):
@@ -115,7 +116,9 @@ class Community:
                         R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
             self.R = pd.DataFrame(R, index = self.R.index, columns = self.R.keys())
         
-    def RunExperiment(self,f,T,np,group='Well',scale=10**9,refresh_resource=True):
+    def RunExperiment(self,f,T,np,group='Well',scale=None,refresh_resource=True):
+        if scale == None:
+            scale = self.scale #Use scale from initialization by default
         t = 0
         N_traj = TimeStamp(self.N,t,group=group)
         R_traj = TimeStamp(self.R,t,group=group)
