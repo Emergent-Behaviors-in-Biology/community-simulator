@@ -200,8 +200,12 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
     Xfinal = TestPlate.R.loc['Predator'].values.reshape(-1)
     
     #Compute moments for feeding in to cavity calculation
-    args0 = np.asarray([np.mean(Rfinal), np.mean(Nfinal), np.mean(Xfinal),
-                        np.mean(Rfinal**2), np.mean(Nfinal**2), np.mean(Xfinal**2)])+1e-10
+    args0 = (Stot*1./S)*np.asarray([np.mean(Rfinal)/params['gamma'], 
+                                    np.mean(Nfinal), 
+                                    np.mean(Xfinal)*params['eta'],
+                                    np.mean(Rfinal**2)/params['gamma'], 
+                                    np.mean(Nfinal**2), 
+                                    np.mean(Xfinal**2)*params['eta']])+1e-10
     out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
     args_cav = np.exp(out.x)
     
@@ -228,9 +232,9 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         axs[1,1].hist(Rfinal[Rfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[0],label='Resource')
         axs[1,1].hist(Nfinal[Nfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[1],label='Consumer')
         axs[1,1].hist(Xfinal[Xfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[2],label='Predator')
-        axs[1,1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M*dbin,color=sns.color_palette()[0])
-        axs[1,1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S*dbin,color=sns.color_palette()[1])
-        axs[1,1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q*dbin,color=sns.color_palette()[2])
+        axs[1,1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M*dbin*trials,color=sns.color_palette()[0])
+        axs[1,1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S*dbin*trials,color=sns.color_palette()[1])
+        axs[1,1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q*dbin*trials,color=sns.color_palette()[2])
         axs[1,1].set_xlabel('Non-extinct Species Abundance')
         
         #Compare initial and final values in optimization
@@ -265,22 +269,22 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         final_state['Run Number']=run_number
         final_state.set_index('Run Number',append=True,inplace=True)
         final_state = final_state.reorder_levels(['Run Number',0,1])
+        final_state.index.names=[None,None,None]
         
         data = pd.DataFrame([args_cav],columns=['<R>','<N>','<X>','<R^2>','<N^2>','<X^2>'],index=[run_number])
-        data.index = data.index.rename('Run Number')
         data['fun']=out.fun
         for item in params.keys():
             data[item]=params[item]
-        
+        for item in ['S','M','Q']:
+            data[item]=com_params_new[item]
         
         sim_index = [Stot*['m']+Stot*['R0']+Stot*['u'],3*list(range(Stot))]
-        sim_params = pd.DataFrame(np.hstack((com_params['m'],com_params['R0'][:M],com_params['u'][M:])),columns=data.index,index=sim_index).T
-        for item in ['S','M','Q']:
-            sim_params[item]=com_params_new[item]
-            
+        sim_params = pd.DataFrame(np.hstack((com_params['m'],com_params['R0'][:Stot],com_params['u'][Stot:])),columns=data.index,index=sim_index).T
+
         c_matrix = pd.DataFrame(com_params['c'],columns=TestPlate.R.index,index=N0.index)
         c_matrix['Run Number']=run_number
         c_matrix.set_index('Run Number',append=True,inplace=True)
         c_matrix = c_matrix.reorder_levels(['Run Number',0])
+        c_matrix.index.names=[None,None]
         
         return data, final_state, sim_params, c_matrix
