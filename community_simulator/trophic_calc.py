@@ -22,7 +22,7 @@ folder = '/project/biophys/trophic_structure/dataDec17/vary_'+args.param
 distutils.dir_util.mkpath(folder)
 
 params = {'K':1.,
-          'sigK':0.,
+          'sigK':0.1,
           'muc':1.,
           'sigc':0.1,
           'mud':1.,
