@@ -92,17 +92,21 @@ def test_bound_2(log_args,params):
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(log_args,params):
-    args = np.exp(log_args)
-    RHS_R = sigR(args,params)*fR(args,params)*w1(DelR(args,params))
-    RHS_N = sigN(args,params)*fN(args,params)*w1(DelN(args,params))
-    RHS_X = sigX(args,params)*fX(args,params)*w1(DelX(args,params))
-    RHS_qR = (sigR(args,params)*fR(args,params))**2 * w2(DelR(args,params))
-    RHS_qN = (sigN(args,params)*fN(args,params))**2 * w2(DelN(args,params))
-    RHS_qX = (sigX(args,params)*fX(args,params))**2 * w2(DelX(args,params))
+    args_new = np.exp(log_args)/np.asarray([sigR(args,params)*fR(args,params),
+                                        sigN(args,params)*fN(args,params),
+                                        sigX(args,params)*fX(args,params),
+                                        (sigR(args,params)*fR(args,params))**2,
+                                        (sigN(args,params)*fN(args,params))**2,
+                                        (sigX(args,params)*fX(args,params))**2])
 
-    RHS = np.asarray([RHS_R,RHS_N,RHS_X,RHS_qR,RHS_qN,RHS_qX])
+    RHS = np.asarray([w1(DelR(args,params)),
+                     w1(DelN(args,params)),
+                     w1(DelX(args,params)),
+                     w2(DelR(args,params)),
+                     w2(DelN(args,params)),
+                     w2(DelX(args,params))])
     
-    return np.sum((args-RHS)**2)
+    return np.sum((args_new-RHS)**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
 def cost_function_bounded(log_args,params,upper_bound):
