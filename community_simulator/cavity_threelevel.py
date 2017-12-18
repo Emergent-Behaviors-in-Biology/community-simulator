@@ -206,6 +206,9 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
                                     np.mean(Rfinal**2)/params['gamma'], 
                                     np.mean(Nfinal**2), 
                                     np.mean(Xfinal**2)*params['eta']])+1e-10
+    if np.mean(Nfinal) == 0:
+        args0[0] = w1(params['K']/params['sigK'])*params['sigK']
+        args0[3] = w2(params['K']/params['sigK'])*params['sigK']**2
     out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
     args_cav = np.exp(out.x)
     
