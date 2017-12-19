@@ -28,18 +28,20 @@ filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_K_eta'+'.xlsx'
 ic = [0,[0,1,2],0,[0,1]]
 h = [0,0,[0,1],[0,1]]
 
-n_iter = 800
+n_iter = 1500
 trials = 27
+T=5
+cutoff = 1e-6
 
-params = {'K':0.1,
-          'sigK':0.01,
-          'muc':10.,
-          'sigc':0.1,
-          'mud':10.,
-          'sigd':0.1,
-          'm':1.,
-          'sigm':0.1,
-          'u':1.,
+params = {'K':1.,
+          'sigK':0.1,
+          'muc':3.,
+          'sigc':0.05,
+          'mud':3.,
+          'sigd':0.05,
+          'm':0.5,
+          'sigm':0.05,
+          'u':0.5,
           'sigu':0.1,
           'gamma':1.,
           'eta':1.}
@@ -48,14 +50,15 @@ params[args.param] = args.scale*args.task_ID
 
 S = 40
 
-Kvec = np.linspace(0,1.0,args.ns)
-etavec = np.linspace(0.5,2,args.ns)
+Kvec = np.linspace(0.1,1,args.ns)
+etavec = S*1./np.arange(20,80,int(round(60./args.ns)))
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
     for m in range(len(etavec)):
         params['K']=Kvec[j]
         params['eta']=etavec[m]
-        out = RunCommunity(params,S,trials=trials,run_number=j*len(etavec)+m,n_iter=n_iter)
+        out = RunCommunity(params,S,trials=trials,run_number=j*len(etavec)+m,
+                           n_iter=n_iter,T=T,cutoff=cutoff)
     
         if j==0 and m==0:
             for q in range(4):
@@ -68,14 +71,15 @@ for j in range(len(Kvec)):
 
 filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_muc_mud'+'.xlsx' 
                 for q in range(len(namelist))]
-mucvec = np.linspace(5,15,args.ns)
-mudvec = np.linspace(5,15,args.ns)
+mucvec = np.linspace(2,6,args.ns)
+mudvec = np.linspace(2,6,args.ns)
 for j in range(len(mucvec)):
     print('muc='+str(mucvec[j]))
     for m in range(len(mudvec)):
         params['muc']=mucvec[j]
         params['mud']=mudvec[m]
-        out = RunCommunity(params,S,trials=trials,run_number=j*len(mudvec)+m,n_iter=n_iter)
+        out = RunCommunity(params,S,trials=trials,run_number=j*len(mudvec)+m,
+                           n_iter=n_iter,T=T,cutoff=cutoff)
         
         if j==0 and m==0:
             for q in range(4):

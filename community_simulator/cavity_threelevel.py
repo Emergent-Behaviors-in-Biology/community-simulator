@@ -193,28 +193,33 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
     
     #Create Community class instance and run  
     TestPlate = Community([N0,RX0],[dNdt,dRdt],com_params)
-    Ntraj,RXtraj = TestPlate.RunExperiment(np.eye(np.shape(N0)[1]),T,n_iter,
-                                           refresh_resource=False,scale=1./cutoff)
-    Rtraj = RXtraj['Resource']
-    Xtraj = RXtraj['Predator']
+    try:
+        Ntraj,RXtraj = TestPlate.RunExperiment(np.eye(np.shape(N0)[1]),T,n_iter,
+                                               refresh_resource=False,scale=1./cutoff)
+        Rtraj = RXtraj['Resource']
+        Xtraj = RXtraj['Predator']
     
-    #Find final states
-    Rfinal = TestPlate.R.loc['Resource'].values.reshape(-1)
-    Nfinal = TestPlate.N.values.reshape(-1)
-    Xfinal = TestPlate.R.loc['Predator'].values.reshape(-1)
+        #Find final states
+        Rfinal = TestPlate.R.loc['Resource'].values.reshape(-1)
+        Nfinal = TestPlate.N.values.reshape(-1)
+        Xfinal = TestPlate.R.loc['Predator'].values.reshape(-1)
     
-    #Compute moments for feeding in to cavity calculation
-    args0 = (Stot*1./S)*np.asarray([np.mean(Rfinal)/params['gamma'], 
-                                    np.mean(Nfinal), 
-                                    np.mean(Xfinal)*params['eta'],
-                                    np.mean(Rfinal**2)/params['gamma'], 
-                                    np.mean(Nfinal**2), 
-                                    np.mean(Xfinal**2)*params['eta']])+1e-10
-    if np.mean(Nfinal) == 0:
-        args0[0] = w1(params['K']/params['sigK'])*params['sigK']
-        args0[3] = w2(params['K']/params['sigK'])*params['sigK']**2
-    out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
-    args_cav = np.exp(out.x)
+        #Compute moments for feeding in to cavity calculation
+        args0 = (Stot*1./S)*np.asarray([np.mean(Rfinal)/params['gamma'], 
+                                        np.mean(Nfinal), 
+                                        np.mean(Xfinal)*params['eta'],
+                                        np.mean(Rfinal**2)/params['gamma'], 
+                                        np.mean(Nfinal**2), 
+                                        np.mean(Xfinal**2)*params['eta']])+1e-10
+        if np.mean(Nfinal) == 0:
+            args0[0] = w1(params['K']/params['sigK'])*params['sigK']
+            args0[3] = w2(params['K']/params['sigK'])*params['sigK']**2
+        out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
+        args_cav = np.exp(out.x)
+        fun = out.fun
+    except:
+        args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        fun = np.nan
     
     if plotting and out.fun<=eps:
         plotting_well = N0.keys()[0]
@@ -279,7 +284,7 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         final_state.index.names=[None,None,None]
         
         data = pd.DataFrame([args_cav],columns=['<R>','<N>','<X>','<R^2>','<N^2>','<X^2>'],index=[run_number])
-        data['fun']=out.fun
+        data['fun']=fun
         for item in params.keys():
             data[item]=params[item]
         for item in ['S','M','Q']:
