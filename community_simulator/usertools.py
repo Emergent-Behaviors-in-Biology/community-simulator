@@ -11,17 +11,17 @@ import pandas as pd
 from numpy.random import dirichlet
 
 #Default parameters for consumer matrix
-params_default = {'SA': 3*np.ones(3), #Number of species in each family
-          'MA': 3*np.ones(3), #Number of resources of each type
-          'Sgen': 3, #Number of generalist species
+params_default = {'SA': 20*np.ones(4), #Number of species in each family
+          'MA': np.ones(4), #Number of resources of each type
+          'Sgen': 20, #Number of generalist species
           'muc': 1, #Mean sum of consumption rates in Gaussian model
           'sigc': .01, #Variance in consumption rate in Gaussian model
           'q': 2./3, #Preference strength 
-          'c0':0.0001, #Background consumption rate in binary model
+          'c0':0.01, #Background consumption rate in binary model
           'c1':1., #Maximum consumption rate in binary model
-          'fs':0.29, #Fraction of secretion flux with same resource type
+          'fs':0.2, #Fraction of secretion flux with same resource type
           'fw':0.7, #Fraction of secretion flux to 'waste' resource
-          'D_diversity':0.001 #Variability in secretion fluxes among resources (must be less than 1)
+          'D_diversity':0.2 #Variability in secretion fluxes among resources (must be less than 1)
          }
 
 
@@ -77,15 +77,15 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    p = (1./M) + params['q']/params['MA'][k]
+                    p = (params['muc']/(M*params['c1'])) + params['q']/params['MA'][k]
                 else:
-                    p = (1./M) - params['q']/(M-params['MA'][k])
+                    p = (params['muc']/(M*params['c1'])) - params['q']/(M-params['MA'][k])
                     
                 c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
-                                                + BinaryRandomMatrix(params['SA'][k],params['MA'][j],p))
+                                                + params['c1']*BinaryRandomMatrix(params['SA'][k],params['MA'][j],p))
         #Sample uniform binary random matrix for generalists  
-        p = 1./M
-        c.loc['GEN'] = c.loc['GEN'].values + BinaryRandomMatrix(params['Sgen'],M,p)
+        p = params['muc']/(M*params['c1'])
+        c.loc['GEN'] = c.loc['GEN'].values + params['c1']*BinaryRandomMatrix(params['Sgen'],M,p)
     
     else:
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
