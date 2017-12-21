@@ -27,11 +27,11 @@ sheetnames = ['Consumers','Resources','Parameters']
 ic = [[0,1,2],[0,1,2],[0]]
 filename = folder+'/'+'SteadyState'+'_'+str(args.task_ID)+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' 
 
-n_iter = 1500
+n_iter = 200
 trials = 27
 T=5
 
-Kvec = np.linspace(5,10,2)
+Kvec = np.linspace(10,1000,args.ns)
 evec = np.linspace(0.1,1,args.ns)
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
