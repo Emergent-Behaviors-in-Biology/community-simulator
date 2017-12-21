@@ -5,7 +5,7 @@ Created on Thu Oct 19 11:11:49 2017
 
 @author: robertmarsland
 """
-
+from __future__ import division
 import numpy as np
 import pandas as pd
 from numpy.random import dirichlet
@@ -16,7 +16,7 @@ params_default = {'SA': 20*np.ones(4), #Number of species in each family
           'Sgen': 20, #Number of generalist species
           'muc': 1, #Mean sum of consumption rates in Gaussian model
           'sigc': .01, #Variance in consumption rate in Gaussian model
-          'q': 2./3, #Preference strength 
+          'q': 2./3, #Preference strength (0 for generalist and 1 for specialist)
           'c0':0.01, #Background consumption rate in binary model
           'c1':1., #Maximum consumption rate in binary model
           'fs':0.2, #Fraction of secretion flux with same resource type
@@ -56,17 +56,18 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
     
     #Perform Gaussian sampling
     if kind == 'Gaussian':
-        #Sample Gaussian random numbers with variance sigc and mean muc/M
-        c = pd.DataFrame(np.random.randn(S,M)*params['sigc']+np.ones((S,M))*params['muc']/M,
+        #Sample Gaussian random numbers with variance sigc
+        c = pd.DataFrame(np.random.randn(S,M)*params['sigc'],
                      columns=resource_index,index=consumer_index)
     
-        #Bias consumption of each family towards its preferred resource
+        #Add mean values, biasing consumption of each family towards its preferred resource
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + params['q']/params['MA'][k]
+                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (params['muc']/M)*(1+params['q']*(M-params['MA'][j])/params['MA'][j])
                 else:
-                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values - params['q']/(M-params['MA'][k])
+                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (params['muc']/M)*(1-params['q'])
+        c.loc['GEN'] = c.loc['GEN'].values + (params['muc']/M)
                     
     #Perform binary sampling
     elif kind == 'Binary':
@@ -77,9 +78,9 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    p = (params['muc']/(M*params['c1'])) + params['q']/params['MA'][k]
+                    p = (params['muc']/(M*params['c1']))*(1+params['q']*(M-params['MA'][j])/params['MA'][j])
                 else:
-                    p = (params['muc']/(M*params['c1'])) - params['q']/(M-params['MA'][k])
+                    p = (params['muc']/(M*params['c1']))*(1-params['q'])
                     
                 c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
                                                 + params['c1']*BinaryRandomMatrix(params['SA'][k],params['MA'][j],p))
@@ -92,19 +93,19 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
         return 'Error'
         
     #Make crossfeeding matrix
-    D = pd.DataFrame(np.zeros((M,M)),index=c.keys(),columns=c.keys())
+    DT = pd.DataFrame(np.zeros((M,M)),index=c.keys(),columns=c.keys())
     for type_name in type_names:
-        MA = len(D.loc[type_name])
+        MA = len(DT.loc[type_name])
         #Set background secretion levels
-        p = pd.Series(np.ones(M)*(1-params['fs']-params['fw'])/(M-MA-M_waste),index = D.keys())
+        p = pd.Series(np.ones(M)*(1-params['fs']-params['fw'])/(M-MA-M_waste),index = DT.keys())
         #Set self-secretion level
         p.loc[type_name] = params['fs']/MA
         #Set waste secretion level
         p.loc[waste_name] = params['fw']/M_waste
         #Sample from dirichlet
-        D.loc[type_name] = dirichlet(p/params['D_diversity'],size=MA)
+        DT.loc[type_name] = dirichlet(p/params['D_diversity'],size=MA)
         
-    return c, D
+    return c, DT.T
 
 def AddLabels(N0_values,R0_values,c):
     """Apply labels from consumer matrix c to arrays of initial consumer and resource 
@@ -138,7 +139,7 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
                              *params['w']*sigma[response](R,params))
-    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
+    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'])
     
     return lambda N,R,params: (h[replenishment](R,params)
                                -(F_in(R,params)/params['w']).T.dot(N)

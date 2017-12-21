@@ -5,7 +5,7 @@ Created on Thu Oct 19 11:02:18 2017
 
 @author: robertmarsland
 """
-
+from __future__ import division
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

@@ -16,9 +16,9 @@ def IntegrateWell(CommunityInstance,y0,T=1,ns=2,return_all=False,log_time=False)
     else:
         t = np.linspace(0,T,ns)
     if return_all:
-        return t, integrate.odeint(CommunityInstance.dydt,y0,t)
+        return t, integrate.odeint(CommunityInstance.dydt,y0,t,mxstep=10000,atol=1e-4)
     else:    
-        return integrate.odeint(CommunityInstance.dydt,y0,t)[-1]
+        return integrate.odeint(CommunityInstance.dydt,y0,t,mxstep=10000,atol=1e-4)[-1]
     
 def TimeStamp(data,t,group='Well'):
     if group == 'Well':
