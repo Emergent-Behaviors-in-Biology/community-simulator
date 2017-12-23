@@ -14,7 +14,7 @@ import pandas as pd
 import datetime
 
 parser = argparse.ArgumentParser()
-parser.add_argument("task_ID", type=int)
+#parser.add_argument("task_ID", type=int)
 #parser.add_argument("param", type=str)
 #parser.add_argument("scale", type=float)
 parser.add_argument("ns", type=int)
@@ -36,7 +36,7 @@ evec = np.linspace(0.1,1,args.ns)
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
     for m in range(len(evec)):
-        out = RunCommunity(productivity=Kvec[j],e=evec[m],run_number=j*len(evec)+m,
+        out = RunCommunity(K=Kvec[j],e=evec[m],run_number=j*len(evec)+m,
                            n_iter=n_iter,T=T,n_wells=trials)
     
         
