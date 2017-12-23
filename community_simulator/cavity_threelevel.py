@@ -83,16 +83,14 @@ def chiR(args,params):
     return phiR(args,params)*fR(args,params)
 
 #Test satisfaction of competitive exclusion bound for consumers and predators
-def test_bound_1(log_args,params):
-    args = np.exp(log_args)
+def test_bound_1(args,params):
     return params['gamma']*phiR(args,params)-phiN(args,params)+phiX(args,params)/params['eta']
-def test_bound_2(log_args,params):
-    args = np.exp(log_args)
+def test_bound_2(args,params):
     return params['eta']*phiN(args,params)-phiX(args,params)
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
-def cost_function(log_args,params):
-    args_new = np.exp(log_args)/np.asarray([sigR(args,params)*fR(args,params),
+def cost_function(args,params):
+    args_new = args/np.asarray([sigR(args,params)*fR(args,params),
                                         sigN(args,params)*fN(args,params),
                                         sigX(args,params)*fX(args,params),
                                         (sigR(args,params)*fR(args,params))**2,
@@ -109,23 +107,25 @@ def cost_function(log_args,params):
     return np.sum((args_new-RHS)**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
-def cost_function_bounded(log_args,params,upper_bound):
-    args = np.exp(log_args)
-    b1 = test_bound_1(log_args,params)
-    b2 = test_bound_2(log_args,params)
-    log_arg_max = np.max(log_args)
-    if np.isfinite(b1) and np.isfinite(b2) and (log_arg_max < upper_bound):
-        if b1>0 and b2>0:
-            RHS_R = sigR(args,params)*fR(args,params)*w1(DelR(args,params))
-            RHS_N = sigN(args,params)*fN(args,params)*w1(DelN(args,params))
-            RHS_X = sigX(args,params)*fX(args,params)*w1(DelX(args,params))
-            RHS_qR = (sigR(args,params)*fR(args,params))**2 * w2(DelR(args,params))
-            RHS_qN = (sigN(args,params)*fN(args,params))**2 * w2(DelN(args,params))
-            RHS_qX = (sigX(args,params)*fX(args,params))**2 * w2(DelX(args,params))
-
-            RHS = np.asarray([RHS_R,RHS_N,RHS_X,RHS_qR,RHS_qN,RHS_qX])
+def cost_function_bounded(args,params):
+    args_new = args/np.asarray([sigR(args,params)*fR(args,params),
+                                        sigN(args,params)*fN(args,params),
+                                        sigX(args,params)*fX(args,params),
+                                        (sigR(args,params)*fR(args,params))**2,
+                                        (sigN(args,params)*fN(args,params))**2,
+                                        (sigX(args,params)*fX(args,params))**2])
+    b1 = test_bound_1(args,params)
+    b2 = test_bound_2(args,params)
+    if np.isfinite(b1) and np.isfinite(b2):
+        if b1>0 and b2>0 and np.all(args>=0):
+            RHS = np.asarray([w1(DelR(args,params)),
+                             w1(DelN(args,params)),
+                             w1(DelX(args,params)),
+                             w2(DelR(args,params)),
+                             w2(DelN(args,params)),
+                             w2(DelX(args,params))])
     
-            return np.sum((args-RHS)**2)
+            return np.sum((args_new-RHS)**2)
         else:
             return np.inf
     else:
@@ -214,8 +214,8 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         if np.mean(Nfinal) == 0:
             args0[0] = w1(params['K']/params['sigK'])*params['sigK']
             args0[3] = w2(params['K']/params['sigK'])*params['sigK']**2
-        out = opt.minimize(cost_function_bounded,np.log(args0),args=(params,log_bound))
-        args_cav = np.exp(out.x)
+        out = opt.minimize(cost_function_bounded,args0,args=(params,))
+        args_cav = out.x
         fun = out.fun
     except:
         args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
