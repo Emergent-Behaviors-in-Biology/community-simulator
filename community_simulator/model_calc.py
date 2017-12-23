@@ -25,7 +25,7 @@ folder = '/project/biophys/microbial_crm/data'
 distutils.dir_util.mkpath(folder)
 sheetnames = ['Consumers','Resources','Parameters']
 ic = [[0,1,2],[0,1,2],[0]]
-filename = folder+'/'+'SteadyState'+'_'+str(args.task_ID)+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' 
+filename = folder+'/'+'SteadyState'+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' 
 
 n_iter = 200
 trials = 27
