@@ -37,7 +37,6 @@ for item in arg_names:
 
 for item in data.index:
     params = data[param_names].loc[item].to_dict()
-    args = data[arg_names].loc[item].values
     if np.all(np.isfinite(interp_data[arg_names].loc[item].values)):
         out = opt.minimize(cost_function_bounded,interp_data[arg_names].loc[item].values,args=(params,))
     else:
@@ -56,7 +55,6 @@ data_new = data.copy()
 
 for item in data.index:
     params = data[param_names].loc[item].to_dict()
-    args = data[arg_names].loc[item].values
     out = opt.minimize(cost_function_bounded,data[arg_names].loc[item],args=(params,))
     if np.isfinite(out.fun):
         data_new.loc[item,arg_names] = out.x
