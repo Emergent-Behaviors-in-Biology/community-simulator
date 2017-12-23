@@ -64,7 +64,7 @@ def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
     try:
         MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
         MyPlate.Passage(np.eye(n_wells),refresh_resource=False)
-        richness = (MyPlate.N>0).sum()
+        richness = np.mean((MyPlate.N>0).sum().values)
     except:
         richness = np.nan
     
