@@ -21,9 +21,9 @@ dynamics = [dNdt,dRdt]
 def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
                  n_wells=27,run_number=0,fs=0.25,fw=0.25):
     
-    sample_par = {'SA': 50*np.ones(4), #Number of species in each family
+    sample_par = {'SA': 40*np.ones(4), #Number of species in each family
           'MA': MA*np.ones(4), #Number of resources of each type
-          'Sgen': 50, #Number of generalist species
+          'Sgen': 40, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates
           'q': q, #Preference strength 
           'c0':0.01, #Background consumption rate in binary model
@@ -68,7 +68,7 @@ def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
     except:
         richness = np.nan
     
-    final_state = [MyPlate.N, MyPlate.R]
+    final_state = [MyPlate.N.copy(), MyPlate.R.copy()]
     for j in range(2):
         final_state[j]['Run Number']=run_number
         final_state[j].set_index('Run Number',append=True,inplace=True)
@@ -77,5 +77,11 @@ def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
         
     params_in = pd.DataFrame([K,q,e,MA,S,richness],columns=[run_number],
                              index=['K','q','e','MA','S','Rich']).T
+
+    c_matrix = pd.DataFrame(c,columns=MyPlate.R.index,index=MyPlate.N.index)
+    c_matrix['Run Number']=run_number
+    c_matrix.set_index('Run Number',append=True,inplace=True)
+    c_matrix = c_matrix.reorder_levels(['Run Number',0,1])
+    c_matrix.index.names=[None,None,None]
         
-    return final_state + [params_in]
+    return final_state + [params_in,c_matrix]

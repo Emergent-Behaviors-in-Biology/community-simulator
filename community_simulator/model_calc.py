@@ -23,9 +23,10 @@ args = parser.parse_args()
 #folder = 'test'
 folder = '/project/biophys/microbial_crm/data'
 distutils.dir_util.mkpath(folder)
-sheetnames = ['Consumers','Resources','Parameters']
-ic = [[0,1,2],[0,1,2],[0]]
-filename = folder+'/'+'SteadyState'+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' 
+datanames = ['Consumers','Resources','Parameters','c_matrix']
+ic = [[0,1,2],[0,1,2],0,[0,1,2]]
+h = [0,0,0,[0,1]]
+filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
 
 n_iter = 200
 trials = 27
@@ -38,21 +39,12 @@ for j in range(len(Kvec)):
     for m in range(len(evec)):
         out = RunCommunity(K=Kvec[j],e=evec[m],run_number=j*len(evec)+m,
                            n_iter=n_iter,T=T,n_wells=trials)
-    
         
         if j==0 and m==0:
-            writer = pd.ExcelWriter(filename)
-            for q in range(3):
-                out[q].to_excel(writer,sheet_name=sheetnames[q])
-            writer.save()
-            writer.close()
+            for q in range(4):
+                out[q].to_excel(filenames[q])
         else:
-            old = []
-            for q in range(3):
-                old.append(pd.read_excel(filename,index_col=ic[q],header=[0],sheet_name=sheetnames[q]))
-            writer = pd.ExcelWriter(filename)
-            for q in range(3):
-                old[q].append(out[q]).to_excel(writer,sheet_name=sheetnames[q])
-            writer.save()
-            writer.close()
+            for q in range(4):
+                old = pd.read_excel(filenames[q],index_col=ic[q],header=h[q])
+                old.append(out[q]).to_excel(filenames[q])
         del out
