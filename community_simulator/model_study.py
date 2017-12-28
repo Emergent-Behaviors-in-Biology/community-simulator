@@ -49,7 +49,7 @@ def RunCommunity(K=100.,q=0.,e=0.5,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
 
     #Create parameter set
     params={'c':c,
-            'm':np.ones(S_tot)+np.random.randn(S_tot)*0.1,
+            'm':np.ones(S_tot)*0.5+np.random.rand(S_tot),
             'w':np.ones(M),
             'D':D,
             'g':np.ones(S_tot),
