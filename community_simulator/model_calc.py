@@ -28,7 +28,7 @@ ic = [[0,1,2],[0,1,2],0,[0,1,2]]
 h = [0,0,0,[0,1]]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
 
-n_iter = 200
+n_iter = 500
 trials = 27
 T=5
 
