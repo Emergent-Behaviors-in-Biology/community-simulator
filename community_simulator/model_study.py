@@ -18,10 +18,10 @@ def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
-                 n_wells=27,run_number=0,fs=0.25,fw=0.25):
+def RunCommunity(K=100.,q=0.,e=0.5,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
+                 MA=25,SA=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0):
     
-    sample_par = {'SA': 40*np.ones(4), #Number of species in each family
+    sample_par = {'SA': SA*np.ones(4), #Number of species in each family
           'MA': MA*np.ones(4), #Number of resources of each type
           'Sgen': 40, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates
@@ -42,7 +42,7 @@ def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
     for k in range(n_wells):
         N0[np.random.choice(S_tot,size=S,replace=False),k]=1e-3/S
     R0 = np.zeros((M,n_wells))
-    R0[0,:] = K
+    R0[food_type*MA,:] = K
 
     N0,R0 = usertools.AddLabels(N0,R0,c)
     init_state = [N0,R0]
@@ -75,8 +75,8 @@ def RunCommunity(K=10.,q=0.,e=0.5,MA=25,S=100,n_iter=200,T=5,
         final_state[j] = final_state[j].reorder_levels(['Run Number',0,1])
         final_state[j].index.names=[None,None,None]
         
-    params_in = pd.DataFrame([K,q,e,MA,S,richness],columns=[run_number],
-                             index=['K','q','e','MA','S','Rich']).T
+    params_in = pd.DataFrame([K,q,e,fs,fw,Ddiv,M,S,food_type,richness],columns=[run_number],
+                             index=['K','q','e','fs','fw','Ddiv','M','S','Food','Rich']).T
 
     c_matrix = pd.DataFrame(c,columns=MyPlate.R.index,index=MyPlate.N.index)
     c_matrix['Run Number']=run_number
