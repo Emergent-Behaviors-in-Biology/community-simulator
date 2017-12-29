@@ -20,16 +20,16 @@ parser = argparse.ArgumentParser()
 parser.add_argument("ns", type=int)
 args = parser.parse_args()
 
-folder = 'test'
-#folder = '/project/biophys/microbial_crm/qdata'
+#folder = 'test'
+folder = '/project/biophys/microbial_crm/qdata'
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
 h = [0,0,0,[0,1]]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
 
-n_iter = 2
-trials = 2
+n_iter = 500
+trials = 27
 T=5
 
 qvec = np.linspace(0,1,args.ns)
