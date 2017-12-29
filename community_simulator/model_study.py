@@ -18,12 +18,12 @@ def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-def RunCommunity(K=100.,q=0.,e=0.5,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
-                 MA=25,SA=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0):
+def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
+                 MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0):
     
     sample_par = {'SA': SA*np.ones(4), #Number of species in each family
           'MA': MA*np.ones(4), #Number of resources of each type
-          'Sgen': 40, #Number of generalist species
+          'Sgen': Sgen, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates
           'q': q, #Preference strength 
           'c0':0.01, #Background consumption rate in binary model

@@ -67,10 +67,12 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
                     c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (params['muc']/M)*(1+params['q']*(M-params['MA'][j])/params['MA'][j])
                 else:
                     c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (params['muc']/M)*(1-params['q'])
-        c.loc['GEN'] = c.loc['GEN'].values + (params['muc']/M)
+        if 'GEN' in c.index:
+            c.loc['GEN'] = c.loc['GEN'].values + (params['muc']/M)
                     
     #Perform binary sampling
     elif kind == 'Binary':
+        assert params['muc'] < M*params['c1'], 'muc not attainable with given M and c1.'
         #Construct uniform matrix at background consumption rate c0
         c = pd.DataFrame(np.ones((S,M))*params['c0'],columns=resource_index,index=consumer_index)
     
@@ -84,9 +86,10 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
                     
                 c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
                                                 + params['c1']*BinaryRandomMatrix(params['SA'][k],params['MA'][j],p))
-        #Sample uniform binary random matrix for generalists  
-        p = params['muc']/(M*params['c1'])
-        c.loc['GEN'] = c.loc['GEN'].values + params['c1']*BinaryRandomMatrix(params['Sgen'],M,p)
+        #Sample uniform binary random matrix for generalists
+        if 'GEN' in c.index:
+            p = params['muc']/(M*params['c1'])
+            c.loc['GEN'] = c.loc['GEN'].values + params['c1']*BinaryRandomMatrix(params['Sgen'],M,p)
     
     else:
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
