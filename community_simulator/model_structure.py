@@ -21,7 +21,7 @@ parser.add_argument("ns", type=int)
 args = parser.parse_args()
 
 #folder = 'test'
-folder = '/project/biophys/microbial_crm/qdata'
+folder = '/project/biophys/microbial_crm/qdata_2'
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
@@ -35,7 +35,8 @@ T=5
 qvec = np.linspace(0,1,args.ns)
 for j in range(len(qvec)):
     for t in range(4):
-        out = RunCommunity(q=qvec[j],run_number=j*4+t,n_iter=n_iter,T=T,n_wells=trials,food_type=t,fw=0.7,fs=0.25)
+        out = RunCommunity(q=qvec[j],run_number=j*4+t,n_iter=n_iter,T=T,n_wells=trials,SA=50,Sgen=0,
+                           food_type=t,fw=0.7,fs=0.25)
         
         if j==0 and t==0:
             for q in range(4):
