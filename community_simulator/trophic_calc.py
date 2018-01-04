@@ -60,7 +60,7 @@ etavec = S*1./np.arange(20,80,int(round(60./args.ns)))
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
     for m in range(len(etavec)):
-        Q = S./etavec[m]
+        Q = S*1./etavec[m]
         params['K']=Kvec[j]
         params['eta']=etavec[m]
         if args.layer == 'X':
@@ -81,25 +81,3 @@ for j in range(len(Kvec)):
                 pd.read_excel(filenamelist[q],index_col=ic[q],header=h[q]).append(out[q]).to_excel(filenamelist[q])
 
         del out
-
-filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_muc_mud'+'.xlsx' 
-                for q in range(len(namelist))]
-mucvec = np.linspace(2,6,args.ns)
-mudvec = np.linspace(2,6,args.ns)
-for j in range(len(mucvec)):
-    print('muc='+str(mucvec[j]))
-    for m in range(len(mudvec)):
-        params['muc']=mucvec[j]
-        params['mud']=mudvec[m]
-        out = RunCommunity(params,S,trials=trials,run_number=j*len(mudvec)+m,
-                           n_iter=n_iter,T=T,cutoff=cutoff)
-        
-        if j==0 and m==0:
-            for q in range(4):
-                out[q].to_excel(filenamelist[q])
-        else:
-            for q in range(4):
-                pd.read_excel(filenamelist[q],index_col=ic[q],header=h[q]).append(out[q]).to_excel(filenamelist[q])
-
-        del out
-
