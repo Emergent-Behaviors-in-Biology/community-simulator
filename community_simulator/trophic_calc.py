@@ -14,10 +14,12 @@ import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument("task_ID", type=int)
-parser.add_argument("param", type=str)
+parser.add_argument("layer", type=str)
 parser.add_argument("scale", type=float)
 parser.add_argument("ns", type=int)
 args = parser.parse_args()
+
+assert args.layer in ['N','X'], 'Invalid layer choice. Must be N or X.'
 
 #folder = 'test'
 folder = '/project/biophys/trophic_structure/dataDec17/vary_'+args.param
@@ -32,31 +34,42 @@ n_iter = 1500
 trials = 27
 T=5
 cutoff = 1e-6
+S = 40
+p0 = 0.5
 
 params = {'K':1.,
           'sigK':0.1,
-          'muc':3.,
-          'sigc':0.05,
-          'mud':3.,
-          'sigd':0.05,
+          'muc':p0*S,
+          'sigc':np.sqrt(p0*(1-p0)*S),
+          'mud':p0*S,
+          'sigd':np.sqrt(p0*(1-p0)*S),
           'm':0.5,
           'sigm':0.05,
           'u':0.5,
-          'sigu':0.1,
+          'sigu':0.05,
           'gamma':1.,
           'eta':1.}
 
-params[args.param] = args.scale*args.task_ID
-
-S = 40
+p = args.scale*args.task_ID
+if args.layer == 'N':
+    params['muc'] = p*S
+    params['sigc'] = np.sqrt(p*(1-p)*S)
 
 Kvec = np.linspace(0.1,1,args.ns)
 etavec = S*1./np.arange(20,80,int(round(60./args.ns)))
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
     for m in range(len(etavec)):
+        Q = S./etavec[m]
         params['K']=Kvec[j]
         params['eta']=etavec[m]
+        if args.layer == 'X':
+            params['mud'] = p*Q
+            params['sigd'] = np.sqrt(p*(1-p)*Q)
+        else:
+            params['mud'] = p0*Q
+            params['sigd'] = np.sqrt(p0*(1-p0)*Q)
+            
         out = RunCommunity(params,S,trials=trials,run_number=j*len(etavec)+m,
                            n_iter=n_iter,T=T,cutoff=cutoff)
     
