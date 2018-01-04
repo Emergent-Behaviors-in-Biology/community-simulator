@@ -22,7 +22,7 @@ args = parser.parse_args()
 assert args.layer in ['N','X'], 'Invalid layer choice. Must be N or X.'
 
 #folder = 'test'
-folder = '/project/biophys/trophic_structure/dataDec17/vary_'+args.param
+folder = '/project/biophys/trophic_structure/dataJan18/vary_p'+args.layer
 distutils.dir_util.mkpath(folder)
 namelist = ['data','finalstate','simparams','cmatrix']
 filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_K_eta'+'.xlsx' 
