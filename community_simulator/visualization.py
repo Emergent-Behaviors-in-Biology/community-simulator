@@ -39,7 +39,7 @@ def StackPlot(df,ax=None,labels=False,title=None,cluster=False,drop_zero=True,un
     w = len(df.keys())
     
     if cluster:
-        z = hierarchy.linkage(df.T,optimal_ordering=True)
+        z = hierarchy.linkage(df.T,optimal_ordering=True,metric='cosine')
         idx_sort=z[:,:2].reshape(-1)
         idx_sort=np.asarray(idx_sort[idx_sort<w],dtype=int)
         df = df[df.keys()[idx_sort]]
