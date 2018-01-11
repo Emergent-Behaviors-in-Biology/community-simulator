@@ -9,15 +9,51 @@ Created on Thu Oct 19 11:09:38 2017
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+from scipy.cluster import hierarchy
+
+def FormatPath(folder):
+    if folder==None:
+        folder=''
+    else:
+        if folder != '':
+            if folder[-1] != '/':
+                folder = folder+'/'
+    return folder
+
+def LoadData(folder,date):
+    folder = FormatPath(folder)
+    N = pd.read_excel(folder+'Consumers_'+date+'.xlsx',index_col=[0,1,2],header=[0])
+    R = pd.read_excel(folder+'Resources_'+date+'.xlsx',index_col=[0,1,2],header=[0])
+    c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
+    params = pd.read_excel(folder+'Parameters_'+date+'.xlsx',index_col=[0],header=[0])
+    
+    return N,R,c,params
 
 def NonzeroColumns(data,thresh=0):
     return data.keys()[np.where(np.sum(data)>thresh)]
 
-def StackPlot(df,ax=None,labels=False,title=None):
+def StackPlot(df,ax=None,labels=False,title=None,cluster=False,drop_zero=True,unique_color=False):
     if ax == None:
         fig, ax = plt.subplots(1)
     w = len(df.keys())
-    ax.stackplot(range(w),df)
+    
+    if cluster:
+        z = hierarchy.linkage(df.T,optimal_ordering=True)
+        idx_sort=z[:,:2].reshape(-1)
+        idx_sort=np.asarray(idx_sort[idx_sort<w],dtype=int)
+        df = df[df.keys()[idx_sort]]
+    
+    if drop_zero:
+        dfmax = max(df.values.reshape(-1))
+        df = df.loc[(df>0.01*dfmax).any(1)]
+    
+    if unique_color:
+        color_list = plt.cm.get_cmap('cubehelix')(np.random.choice(np.arange(256),size=len(df),replace=False))
+        ax.stackplot(range(w),df,colors = color_list)
+    else:
+        ax.stackplot(range(w),df)
+        
     ax.set_yticks(())
     ax.set_xticks(range(w))
     ax.set_xlim((0,w-1))
