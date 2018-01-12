@@ -221,7 +221,7 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
         fun = np.nan
     
-    if plotting and out.fun<=eps:
+    if plotting and fun<=eps:
         plotting_well = N0.keys()[0]
         f, axs = plt.subplots(3,2,figsize=(12,10))
         visualization.StackPlot(Ntraj.loc(axis=0)[:,plotting_well].T,ax=axs[0,0])
