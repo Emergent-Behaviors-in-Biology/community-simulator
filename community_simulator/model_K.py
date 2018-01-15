@@ -29,24 +29,26 @@ filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split(
 
 n_iter = 50
 trials = 27
+ind_trials = 10
 T=5
 
 Kvec = np.linspace(10,200,args.ns)
 for j in range(len(Kvec)):
-    print('K='+str(Kvec[j]))
-    out = RunCommunity(K=Kvec[j],run_number=j,n_iter=n_iter,T=T,n_wells=trials)
-    if j==0:
-        for q in range(4):
-            out[q].to_excel(filenames[q])
-        with open(filenames[4],'wb') as f:
-            pickle.dump([out[4]],f)
-    else:
-        for q in range(4):
-            old = pd.read_excel(filenames[q],index_col=ic[q],header=h[q])
-            old.append(out[q]).to_excel(filenames[q])
-        with open(filenames[4],'rb') as f:
-            paramlist = pickle.load(f)
-        with open(filenames[4],'wb') as f:
-            pickle.dump(paramlist+[out[4]],f)
-    del out
+    for k in range(ind_trials):
+        print('K='+str(Kvec[j]))
+        out = RunCommunity(K=Kvec[j],run_number=j*ind_trials+k,n_iter=n_iter,T=T,n_wells=trials)
+        if j==0:
+            for q in range(4):
+                out[q].to_excel(filenames[q])
+            with open(filenames[4],'wb') as f:
+                pickle.dump([out[4]],f)
+        else:
+            for q in range(4):
+                old = pd.read_excel(filenames[q],index_col=ic[q],header=h[q])
+                old.append(out[q]).to_excel(filenames[q])
+            with open(filenames[4],'rb') as f:
+                paramlist = pickle.load(f)
+            with open(filenames[4],'wb') as f:
+                pickle.dump(paramlist+[out[4]],f)
+        del out
 
