@@ -384,14 +384,16 @@ def PostProcess(folders,tmax=10):
             data.to_excel('processed_data.xlsx')
     return data
 
-def ReviveCommunity(folder,task_id=1,run_number=1):
+def ReviveCommunity(folder,task_id=1,run_number=1,wells=[]):
     finalstate,params,simparams,c=LoadData(folder,task_id=task_id,load_all=True)
     Nold = finalstate.loc[run_number].loc['Consumer']
     Rold = finalstate.loc[run_number].loc[['Resource','Predator']]
     S = len(Nold)
     M = len(Rold)
-
-    init_state = [Nold,Rold]
+    if len(wells)==0:
+        init_state = [Nold,Rold]
+    else:
+        init_state = [Nold[wells],Rold[wells]]
 
     assumptions = {'regulation':'independent','replenishment':'predator','response':'type I'}
     def dNdt(N,R,params):

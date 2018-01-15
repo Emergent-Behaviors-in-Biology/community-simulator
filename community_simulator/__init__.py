@@ -112,7 +112,7 @@ class Community:
             R = np.zeros(np.shape(self.R))
             for k in range(self.n_wells):
                 for j in range(self.n_wells):
-                    if f[k,j] > 0 and N_tot[j] > 0:
+                    if f[k,j] > 0 and R_tot[j] > 0:
                         R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
             self.R = pd.DataFrame(R, index = self.R.index, columns = self.R.keys())
         
@@ -133,11 +133,11 @@ class Community:
         return N_traj, R_traj
     
     
-    def TestWell(self,T = 4,WellName = None,f0 = 1e-3,log_time = False,ns=100):
-        if WellName == None:
-            WellName = self.N.keys()[0]
-        N_well = self.N.copy()[WellName] * f0
-        R_well = self.R.copy()[WellName]
+    def TestWell(self,T = 4,well_name = None,f0 = 1e-3,log_time = False,ns=100):
+        if well_name == None:
+            well_name = self.N.keys()[0]
+        N_well = self.N.copy()[well_name] * f0
+        R_well = self.R.copy()[well_name]
         t, out = IntegrateWell(self,N_well.append(R_well).values,
                                T=T,ns=ns,return_all=True,log_time=log_time)
         f, axs = plt.subplots(2,sharex=True)
