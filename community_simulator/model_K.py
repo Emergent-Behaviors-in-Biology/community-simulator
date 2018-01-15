@@ -12,6 +12,7 @@ import numpy as np
 import distutils.dir_util
 import pandas as pd
 import datetime
+import pickle
 
 parser = argparse.ArgumentParser()
 parser.add_argument("ns", type=int)
