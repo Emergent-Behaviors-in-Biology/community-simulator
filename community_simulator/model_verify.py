@@ -31,7 +31,14 @@ n_iter = 50
 trials = 27
 T=5
 
-for j in range(args.ns):
+try:
+    old = pd.read_excel(filenames[2],index_col=ic[2],header=h[2])
+    start = len(old)
+except:
+    start=0
+    
+
+for j in range(start,start+args.ns):
     out = RunCommunity(q=0,run_number=j,n_iter=n_iter,T=T,n_wells=trials,SA=50,Sgen=0,fw=0.7,fs=0.25)
         
     if j==0:
