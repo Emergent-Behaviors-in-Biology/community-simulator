@@ -12,24 +12,6 @@ import seaborn as sns
 import pandas as pd
 from scipy.cluster import hierarchy
 
-def FormatPath(folder):
-    if folder==None:
-        folder=''
-    else:
-        if folder != '':
-            if folder[-1] != '/':
-                folder = folder+'/'
-    return folder
-
-def LoadData(folder,date):
-    folder = FormatPath(folder)
-    N = pd.read_excel(folder+'Consumers_'+date+'.xlsx',index_col=[0,1,2],header=[0])
-    R = pd.read_excel(folder+'Resources_'+date+'.xlsx',index_col=[0,1,2],header=[0])
-    c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
-    params = pd.read_excel(folder+'Parameters_'+date+'.xlsx',index_col=[0],header=[0])
-    
-    return N,R,c,params
-
 def NonzeroColumns(data,thresh=0):
     return data.keys()[np.where(np.sum(data)>thresh)]
 
