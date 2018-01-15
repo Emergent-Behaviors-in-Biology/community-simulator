@@ -62,7 +62,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
     MyPlate = Community(init_state,dynamics,params)
     
     try:
-        MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
+        Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
         MyPlate.Passage(np.eye(n_wells),refresh_resource=False)
         richness = np.mean((MyPlate.N>0).sum().values)
     except:
@@ -83,5 +83,5 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
     c_matrix.set_index('Run Number',append=True,inplace=True)
     c_matrix = c_matrix.reorder_levels(['Run Number',0,1])
     c_matrix.index.names=[None,None,None]
-        
-    return final_state + [params_in,c_matrix]
+    
+    return final_state + [params_in,c_matrix,params,Ntraj,Rtraj]

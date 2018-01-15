@@ -14,6 +14,10 @@ import seaborn as sns
 import scipy.optimize as opt
 import pandas as pd
 
+#############################
+#SET UP PROBLEM
+#############################
+
 #Moments of truncated Gaussian
 def w0(Delta):
     return norm.cdf(Delta)
@@ -130,6 +134,10 @@ def cost_function_bounded(args,params):
             return np.inf
     else:
         return np.inf
+
+#############################
+#SOLVE PROBLEM
+#############################
     
 #Generate dynamics for McArthur CRM with predator
 assumptions = {'replenishment':'predator'}
@@ -300,3 +308,108 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         c_matrix.index.names=[None,None]
         
         return data, final_state, sim_params, c_matrix
+
+#############################
+#STUDY RESULTS
+#############################
+
+param_names = 'K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta'.split(',')
+idx=pd.IndexSlice
+    
+def FormatPath(folder):
+    if folder==None:
+        folder=''
+    else:
+        if folder != '':
+            if folder[-1] != '/':
+                folder = folder+'/'
+    return folder
+
+def LoadData(folder,task_id = 1,load_all = False, suff = 'K_eta'):
+    folder = FormatPath(folder)
+    name = '_'+str(task_id)+'_'+suff+'.xlsx'
+    finalstate = pd.read_excel(folder+'finalstate'+name,index_col=[0,1,2],header=[0])
+    params = pd.read_excel(folder+'data'+name,index_col=[0],header=[0])
+    
+    if load_all:
+        c = pd.read_excel(folder+'cmatrix'+name,index_col=[0,1],header=[0,1])
+        simparams = pd.read_excel(folder+'simparams'+name,index_col=[0],header=[0,1])
+        return finalstate,params,simparams,c
+    else:
+        return finalstate,params
+
+def ComputeIPR(df):
+    IPR = pd.DataFrame(columns=df.keys(),index=df.index.levels[0])
+    for j in df.index.levels[0]:
+        p = df.loc[j]/df.loc[j].sum()
+        IPR.loc[j] = 1./((p[p>0]**2).sum())
+    return IPR
+
+def PostProcess(folders,tmax=10):
+    j=0
+    data_names = ['Consumer IPR','Resource IPR','Predator IPR',
+                 'Consumer Richness','Resource Richness','Predator Richness',
+                 'Consumer Biomass','Resource Biomass','Predator Biomass']
+    
+    data = pd.DataFrame(index=[0],columns=data_names+param_names)
+                        
+    for k in np.arange(len(folders)):
+        folder = FormatPath(folders[k])
+
+        for task_id in np.arange(1,tmax+1):
+            finalstate,params = LoadData(folder,task_id=task_id)
+            N = finalstate.loc[idx[:,'Consumer',:],:]
+            R = finalstate.loc[idx[:,'Resource',:],:]
+            X = finalstate.loc[idx[:,'Predator',:],:]
+            
+            N_IPR = ComputeIPR(N)
+            R_IPR = ComputeIPR(R)
+            X_IPR = ComputeIPR(X)
+    
+            for plate in N_IPR.index:
+                for well in N_IPR.keys():
+                    data.loc[j,'Consumer IPR'] = N_IPR.loc[plate,well]
+                    data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
+                    data.loc[j,'Predator IPR'] = X_IPR.loc[plate,well]
+                    data.loc[j,'Consumer Richness']=(N.loc[plate]>0).sum()[well]
+                    data.loc[j,'Resource Richness']=(R.loc[plate]>0).sum()[well]
+                    data.loc[j,'Predator Richness']=(X.loc[plate]>0).sum()[well]
+                    data.loc[j,'Consumer Biomass']=N[well].loc[plate].sum()
+                    data.loc[j,'Resource Biomass']=R[well].loc[plate].sum()
+                    data.loc[j,'Predator Biomass']=X[well].loc[plate].sum()
+                    for item in param_names:
+                        data.loc[j,item] = params.loc[plate,item]
+                    
+                    j+=1
+            data.to_excel('processed_data.xlsx')
+    return data
+
+def ReviveCommunity(folder,task_id=1,run_number=1):
+    finalstate,params,simparams,c=LoadData(folder,task_id=task_id,load_all=True)
+    Nold = finalstate.loc[run_number].loc['Consumer']
+    Rold = finalstate.loc[run_number].loc[['Resource','Predator']]
+    S = len(Nold)
+    M = len(Rold)
+
+    init_state = [Nold,Rold]
+
+    assumptions = {'regulation':'independent','replenishment':'predator','response':'type I'}
+    def dNdt(N,R,params):
+        return usertools.MakeConsumerDynamics(**assumptions)(N,R,params)
+    def dRdt(N,R,params):
+        return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
+    dynamics = [dNdt,dRdt]
+
+    R0 = simparams.loc[run_number].loc['R0']
+    u = simparams.loc[run_number].loc['u']
+    params={'c':c.loc[run_number],
+            'm':simparams.loc[run_number].loc['m'],
+            'u':np.hstack([np.zeros(len(R0)),u]),
+            'w':1,
+            'g':1,
+            'e':1,
+            'R0':np.hstack([R0,np.zeros(len(u))]),
+            'r':np.hstack([np.ones(len(R0)),np.zeros(len(u))])
+           }
+
+    return init_state,dynamics,params
