@@ -24,7 +24,8 @@ distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
 h = [0,0,0,[0,1]]
-filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(5)]
+filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
+filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split()[0]+'.dat')
 
 n_iter = 50
 trials = 27

@@ -67,6 +67,8 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,
         richness = np.mean((MyPlate.N>0).sum().values)
     except:
         richness = np.nan
+        Ntraj = np.nan
+        Rtraj = np.nan
     
     final_state = [MyPlate.N.copy(), MyPlate.R.copy()]
     for j in range(2):
