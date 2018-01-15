@@ -14,10 +14,11 @@ import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument("task_ID", type=int)
+parser.add_argument("param", type=str)
 args = parser.parse_args()
 
 param_names = ['K','sigK','muc','sigc','mud','sigd','m','sigm','u','sigu','gamma','eta']
-folder = '/project/biophys/trophic_structure/dataDec17_rev'
+folder = '/project/biophys/trophic_structure/dataDec17_rev/vary_'+args.param
 distutils.dir_util.mkpath(folder_new)
 namelist = ['data','finalstate','simparams','cmatrix']
 filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_K_eta'+'.xlsx' for q in range(len(namelist))]
