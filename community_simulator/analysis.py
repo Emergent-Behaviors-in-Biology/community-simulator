@@ -7,6 +7,22 @@ Created on Thu Oct 19 11:09:38 2017
 """
 import numpy as np
 import pandas as pd
+import pexpect
+import os
+
+username = 'marsland'
+hostname = 'scc1.bu.edu'
+directory = '/project/biophys/microbial_crm'
+
+def rsync_in(source,dest,username=username,hostname=hostname,directory=directory,password=None):
+    fullsource = '/'.join([directory,source])
+    fullhost = '@'.join([username,hostname])
+    command = ' '.join(['rsync -r -avz',':'.join([fullhost,fullsource]),dest])
+    child = pexpect.spawn(command)
+    child.expect('Password:')
+    child.sendline(password)
+    child.expect('speedup')
+    print(child.before)
 
 def FormatPath(folder):
     if folder==None:

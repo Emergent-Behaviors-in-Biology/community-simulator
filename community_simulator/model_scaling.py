@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("param", type=str)
 parser.add_argument("min", type=float)
 parser.add_argument("max", type=float)
+parser.add_argument("n_iter", type=int)
 parser.add_argument("ns", type=int)
 parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
@@ -31,7 +32,6 @@ h = [0,0,0,[0,1]]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
 filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split()[0]+'.dat')
 
-n_iter = 50
 trials = 10
 T=5
 
@@ -39,9 +39,9 @@ paramvec=np.linspace(args.min,args.max,args.ns)
 for j in range(args.ns):
     for k in range(args.ind_trials):
         print(args.param+'='+str(paramvec[j]))
-        kwargs = {args.param:paramvec[j],'run_number':j*args.ind_trials+k,'n_iter':n_iter,'T':T,'n_wells':trials}
+        kwargs = {args.param:paramvec[j],'run_number':j*args.ind_trials+k,'n_iter':args.n_iter,'T':T,'n_wells':trials}
         out = RunCommunity(**kwargs)
-        if j==0:
+        if j==0 and k==0:
             for q in range(4):
                 out[q].to_excel(filenames[q])
             with open(filenames[4],'wb') as f:
