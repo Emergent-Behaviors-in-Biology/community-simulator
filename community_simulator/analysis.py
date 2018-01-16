@@ -54,7 +54,7 @@ def ComputeIPR(df):
         IPR.loc[j] = 1./((p[p>0]**2).sum())
     return IPR
 
-def PostProcess(folder,date):
+def PostProcess(folder,date,cutoff=0):
     folder = FormatPath(folder)
     N,R,c,params = LoadData(folder,date=date)
     N_IPR = ComputeIPR(N)
@@ -62,7 +62,7 @@ def PostProcess(folder,date):
     
     ns = len(N_IPR)*len(N_IPR.keys())
     
-    data = pd.DataFrame(index=list(range(ns)),columns=['Plate','Consumer IPR', 'Resource IPR']+list(params.keys()))
+    data = pd.DataFrame(index=list(range(ns)),columns=['Plate','Consumer IPR','Resource IPR']+list(params.keys()))
     
     j=0
     
@@ -73,7 +73,7 @@ def PostProcess(folder,date):
             data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
             for item in params.keys():
                 data.loc[j,item] = params.loc[plate,item]
-            data.loc[j,'Rich']=(N.loc[plate]>0).sum()[well]
+            data.loc[j,'Species Richness']=(N.loc[plate]>cutoff*(N.loc[plate].sum())).sum()[well]
             j+=1
     data.to_excel(folder+'data_'+date+'.xlsx')
     return data
