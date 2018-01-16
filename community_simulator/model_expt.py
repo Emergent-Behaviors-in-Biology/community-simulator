@@ -15,16 +15,16 @@ import datetime
 import pickle
 
 parser = argparse.ArgumentParser()
+parser.add_argument("foldername", type=str)
 parser.add_argument("fs", type=float)
 parser.add_argument("fw", type=float)
 parser.add_argument("q", type=float)
-parser.add_argument("ns", type=int)
 parser.add_argument("n_iter", type=int)
 parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
 
 #folder = 'test'
-folder = '/project/biophys/microbial_crm/random_data'
+folder = '/project/biophys/microbial_crm/'+args.foldername
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
