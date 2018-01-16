@@ -47,7 +47,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
     for k in range(n_wells):
         N0[np.random.choice(S_tot,size=S,replace=False),k]=1e-3/S
     R0 = np.zeros((M,n_wells))
-    R0[food_type*MA,:] = K
+    R0[food_type,:] = K
 
     N0,R0 = usertools.AddLabels(N0,R0,c)
     init_state = [N0,R0]
