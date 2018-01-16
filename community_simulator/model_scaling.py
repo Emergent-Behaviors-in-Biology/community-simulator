@@ -15,11 +15,15 @@ import datetime
 import pickle
 
 parser = argparse.ArgumentParser()
+parser.add_argument("param", type=str)
+parser.add_argument("min", type=float)
+parser.add_argument("max", type=float)
 parser.add_argument("ns", type=int)
+parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
 
 #folder = 'test'
-folder = '/project/biophys/microbial_crm/Kdata'
+folder = '/project/biophys/microbial_crm/'+agrs.param+'data'
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
@@ -28,15 +32,15 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split()[0]+'.dat')
 
 n_iter = 50
-trials = 27
-ind_trials = 10
+trials = 10
 T=5
 
-Kvec = np.linspace(10,200,args.ns)
-for j in range(len(Kvec)):
-    for k in range(ind_trials):
-        print('K='+str(Kvec[j]))
-        out = RunCommunity(K=Kvec[j],run_number=j*ind_trials+k,n_iter=n_iter,T=T,n_wells=trials)
+paramvec=np.linspace(args.min,args.max,args.ns)
+for j in range(args.ns):
+    for k in range(args.ind_trials):
+        print(args.param+'='+str(paramvec[j]))
+        kwargs = {args.param:paramvec[j],'run_number':j*args.ind_trials+k,'n_iter':n_iter,'T':T,'n_wells':trials}
+        out = RunCommunity(**kwargs)
         if j==0:
             for q in range(4):
                 out[q].to_excel(filenames[q])
