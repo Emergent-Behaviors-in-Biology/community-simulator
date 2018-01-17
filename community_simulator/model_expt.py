@@ -34,8 +34,8 @@ filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split(
 
 trials = 10
 T=5
-MA = 1
-n_types = 1
+MA = 7
+n_types = 3
 M=MA*n_types
 
 for j in range(args.ind_trials):
