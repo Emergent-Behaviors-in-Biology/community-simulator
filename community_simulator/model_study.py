@@ -38,7 +38,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
           'D_diversity':0.2 #Variability in secretion fluxes among resources (must be less than 1)
          }
 
-    c, D = usertools.MakeMatrices(params=sample_par, kind='Binary', waste_ind=3)
+    c, D = usertools.MakeMatrices(params=sample_par, kind='Binary', waste_ind=n_types-1)
 
     #Create initial conditions (sub-sampling from regional species pool)
     S_tot = len(c)
