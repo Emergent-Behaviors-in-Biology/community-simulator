@@ -38,7 +38,6 @@ MA = 7
 n_types = 3
 M=MA*n_types
 
-paramvec=np.linspace(args.min,args.max,args.ns)
 for j in range(args.ind_trials):
     for k in range(M):
         kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,
