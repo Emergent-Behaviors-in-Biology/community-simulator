@@ -35,12 +35,12 @@ filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split(
 trials = 10
 T=5
 MA = 1
-n_types = 1
+n_types = 2
 M=MA*n_types
 
 for j in range(args.ind_trials):
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,
+        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':10,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs}
         out = RunCommunity(**kwargs)
         if j==0 and k==0:
