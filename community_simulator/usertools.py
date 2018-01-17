@@ -12,9 +12,9 @@ from numpy.random import dirichlet
 
 #Default parameters for consumer matrix
 params_default = {'SA': 20*np.ones(4), #Number of species in each family
-          'MA': np.ones(4), #Number of resources of each type
+          'MA': 25*np.ones(4), #Number of resources of each type
           'Sgen': 20, #Number of generalist species
-          'muc': 1, #Mean sum of consumption rates in Gaussian model
+          'muc': 10, #Mean sum of consumption rates in Gaussian model
           'sigc': .01, #Variance in consumption rate in Gaussian model
           'q': 2./3, #Preference strength (0 for generalist and 1 for specialist)
           'c0':0.01, #Background consumption rate in binary model
