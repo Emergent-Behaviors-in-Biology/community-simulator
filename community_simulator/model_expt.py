@@ -40,7 +40,7 @@ M=MA*n_types
 
 for j in range(args.ind_trials):
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,
+        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs}
         out = RunCommunity(**kwargs)
         if j==0 and k==0:
