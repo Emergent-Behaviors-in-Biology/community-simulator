@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 param_names = ['K','sigK','muc','sigc','mud','sigd','m','sigm','u','sigu','gamma','eta']
 folder = '/project/biophys/trophic_structure/dataDec17_rev/vary_'+args.param
-distutils.dir_util.mkpath(folder_new)
+distutils.dir_util.mkpath(folder)
 namelist = ['data','finalstate','simparams','cmatrix']
 filenamelist = [folder+'/'+namelist[q]+'_'+str(args.task_ID)+'_K_eta'+'.xlsx' for q in range(len(namelist))]
 ic = [0,[0,1,2],0,[0,1]]
