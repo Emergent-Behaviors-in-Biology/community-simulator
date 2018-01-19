@@ -35,7 +35,7 @@ T=5
 cutoff = 1e-6
 S = 40
 
-for item in data.index:
+for item in old[0].index:
     params = old[0][param_names].loc[item].to_dict()
     if params['K']>=0.7:
         out = RunCommunity(params,S,trials=trials,run_number=item,
