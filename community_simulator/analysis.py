@@ -73,7 +73,8 @@ def PostProcess(folder,date,cutoff=0):
             data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
             for item in params.keys():
                 data.loc[j,item] = params.loc[plate,item]
-            data.loc[j,'Species Richness']=(N.loc[plate]>cutoff*(N.loc[plate].sum())).sum()[well]
+            data.loc[j,'Consumer Richness']=(N.loc[plate]>cutoff*(N.loc[plate].sum())).sum()[well]
+            data.loc[j,'Resource Richness']=(R.loc[plate]>cutoff*(R.loc[plate].sum())).sum()[well]
             j+=1
     data.to_excel(folder+'data_'+date+'.xlsx')
     return data
