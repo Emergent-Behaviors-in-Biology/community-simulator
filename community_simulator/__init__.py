@@ -38,6 +38,8 @@ class Community:
         for item in self.params:
             if isinstance(self.params[item],pd.DataFrame):
                 self.params[item]=self.params[item].values.squeeze()
+            elif isinstance(self.params[item],list):
+                self.params[item]=np.asarray(self.params[item])
         if 'D' not in params:
             self.params['D'] = np.ones((self.M,self.M))
             self.params['e'] = 1
