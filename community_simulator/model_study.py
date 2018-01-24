@@ -19,7 +19,8 @@ def dRdt(N,R,params):
 dynamics = [dNdt,dRdt]
 
 def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
-                 MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0):
+                 MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
+                 params=None,N0=None):
     
     MA = int(round(MA))
     SA = int(round(SA))
@@ -38,32 +39,33 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
           'D_diversity':0.2 #Variability in secretion fluxes among resources (must be less than 1)
          }
 
-    c, D = usertools.MakeMatrices(params=sample_par, kind='Binary', waste_ind=n_types-1)
-
-    #Create initial conditions (sub-sampling from regional species pool)
-    S_tot = len(c)
-    M = len(D)
-    N0 = np.zeros((S_tot,n_wells))
-    for k in range(n_wells):
-        N0[np.random.choice(S_tot,size=S,replace=False),k]=1e-3/S
+    #Create resource vector and set food supply
+    M = np.sum(sample_par['MA'])
     R0 = np.zeros((M,n_wells))
     R0[food_type,:] = K
 
-    N0,R0 = usertools.AddLabels(N0,R0,c)
-    init_state = [N0,R0]
+    #Create initial conditions (sub-sampling from regional species pool)
+    S_tot = np.sum(sample_par['SA'])+sample_par['Sgen']
+    if N0 is None:
+        N0 = np.zeros((S_tot,n_wells))
+        for k in range(n_wells):
+            N0[np.random.choice(S_tot,size=S,replace=False),k]=1e-3/S
 
     #Create parameter set
-    params={'c':c,
-            'm':np.ones(S_tot)*0.5+np.random.rand(S_tot),
-            'w':np.ones(M),
-            'D':D,
-            'g':np.ones(S_tot),
-            'e':e,
-            'R0':R0.values[:,0],
-            'r':1.,
-            'tau':1
-            }
-
+    if params is None:
+        c, D = usertools.MakeMatrices(params=sample_par, kind='Binary', waste_ind=n_types-1)
+        params={'c':c,
+                'm':np.ones(S_tot)*0.5+np.random.rand(S_tot),
+                'w':np.ones(M),
+                'D':D,
+                'g':np.ones(S_tot),
+                'e':e,
+                'r':1.,
+                'tau':1
+                }
+    N0,R0 = usertools.AddLabels(N0,R0,params['c'])
+    init_state = [N0,R0]
+    params['R0']=R0.values[:,0]
     MyPlate = Community(init_state,dynamics,params)
     
     try:

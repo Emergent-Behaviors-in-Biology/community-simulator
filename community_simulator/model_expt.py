@@ -39,11 +39,17 @@ n_types = 3
 M=MA*n_types
 
 for j in range(args.ind_trials):
+    first_run = True
+    
     for k in range(M):
         kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types}
+        if not first_run:
+            kwargs.update({'params':out[4],'N0':out[0].values)
+
         out = RunCommunity(**kwargs)
-        if j==0 and k==0:
+        
+        if first_run and j==0:
             for q in range(4):
                 out[q].to_excel(filenames[q])
             with open(filenames[4],'wb') as f:
@@ -56,6 +62,7 @@ for j in range(args.ind_trials):
                 paramlist = pickle.load(f)
             with open(filenames[4],'wb') as f:
                 pickle.dump(paramlist+[out[4]],f)
-        del out
+
+        first_run = False
 
 
