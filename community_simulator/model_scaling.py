@@ -35,11 +35,14 @@ filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split(
 trials = 10
 T=5
 
+extra_params = {'e':0.9}
+
 paramvec=np.linspace(args.min,args.max,args.ns)
 for j in range(args.ns):
     for k in range(args.ind_trials):
         print(args.param+'='+str(paramvec[j]))
         kwargs = {args.param:paramvec[j],'run_number':j*args.ind_trials+k,'n_iter':args.n_iter,'T':T,'n_wells':trials}
+        kwargs.update(extra_params)
         out = RunCommunity(**kwargs)
         if j==0 and k==0:
             for q in range(4):
