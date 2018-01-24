@@ -40,12 +40,12 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
          }
 
     #Create resource vector and set food supply
-    M = np.sum(sample_par['MA'])
+    M = int(np.sum(sample_par['MA']))
     R0 = np.zeros((M,n_wells))
     R0[food_type,:] = K
 
     #Create initial conditions (sub-sampling from regional species pool)
-    S_tot = np.sum(sample_par['SA'])+sample_par['Sgen']
+    S_tot = int(np.sum(sample_par['SA']))+sample_par['Sgen']
     if N0 is None:
         N0 = np.zeros((S_tot,n_wells))
         for k in range(n_wells):
@@ -87,7 +87,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
     params_in = pd.DataFrame([K,q,e,fs,fw,Ddiv,M,S,food_type,richness],columns=[run_number],
                              index=['K','q','e','fs','fw','Ddiv','M','S','Food','Rich']).T
 
-    c_matrix = pd.DataFrame(c,columns=MyPlate.R.index,index=MyPlate.N.index)
+    c_matrix = pd.DataFrame(params['c'].copy(),columns=MyPlate.R.index,index=MyPlate.N.index)
     c_matrix['Run Number']=run_number
     c_matrix.set_index('Run Number',append=True,inplace=True)
     c_matrix = c_matrix.reorder_levels(['Run Number',0,1])

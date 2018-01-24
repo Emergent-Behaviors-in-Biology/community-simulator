@@ -26,12 +26,12 @@ args = parser.parse_args()
 #folder = 'test'
 folder = '/project/biophys/microbial_crm/'+args.foldername
 distutils.dir_util.mkpath(folder)
-datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
+datanames = ['Consumers','Resources','Parameters','c_matrix','Realization','Initial_State']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
 h = [0,0,0,[0,1]]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
-filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split()[0]+'.dat')
-
+filenames = filenames +[folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.dat'
+                        for j in [4,5]]
 trials = 10
 T=5
 MA = 7
@@ -42,26 +42,38 @@ for j in range(args.ind_trials):
     first_run = True
     
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,
+        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,'SA':50,'Sgen':0,'S':20,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types}
         if not first_run:
-            kwargs.update({'params':out[4],'N0':out[0].values)
+            kwargs.update({'params':params,'N0':N0.values})
 
         out = RunCommunity(**kwargs)
+        params = out[4]
+        N0 = out[5].loc[0].T
         
         if first_run and j==0:
             for q in range(4):
                 out[q].to_excel(filenames[q])
             with open(filenames[4],'wb') as f:
                 pickle.dump([out[4]],f)
+            with open(filenames[5],'wb') as f:
+                pickle.dump([N0],f)
         else:
             for q in range(4):
                 old = pd.read_excel(filenames[q],index_col=ic[q],header=h[q])
                 old.append(out[q]).to_excel(filenames[q])
-            with open(filenames[4],'rb') as f:
-                paramlist = pickle.load(f)
-            with open(filenames[4],'wb') as f:
-                pickle.dump(paramlist+[out[4]],f)
+            if first_run:
+                with open(filenames[4],'rb') as f:
+                    paramlist = pickle.load(f)
+                with open(filenames[4],'wb') as f:
+                    pickle.dump(paramlist+[out[4]],f)
+                del paramlist
+
+                with open(filenames[5],'rb') as f:
+                    N0list = pickle.load(f)
+                with open(filenames[5],'wb') as f:
+                    pickle.dump(N0list+[N0],f)
+                del N0list
 
         first_run = False
 
