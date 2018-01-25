@@ -345,7 +345,7 @@ def ComputeIPR(df):
         IPR.loc[j] = 1./((p[p>0]**2).sum())
     return IPR
 
-def PostProcess(folders,tmax=10):
+def PostProcess(folders,tmax=10,tmin=1):
     j=0
     data_names = ['Consumer IPR','Resource IPR','Predator IPR',
                  'Consumer Richness','Resource Richness','Predator Richness',
@@ -356,7 +356,7 @@ def PostProcess(folders,tmax=10):
     for k in np.arange(len(folders)):
         folder = FormatPath(folders[k])
 
-        for task_id in np.arange(1,tmax+1):
+        for task_id in np.arange(tmin,tmax+1):
             finalstate,params = LoadData(folder,task_id=task_id)
             N = finalstate.loc[idx[:,'Consumer',:],:]
             R = finalstate.loc[idx[:,'Resource',:],:]
