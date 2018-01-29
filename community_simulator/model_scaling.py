@@ -35,7 +35,7 @@ filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split(
 trials = 10
 T=5
 
-extra_params = {'e':0.9}
+extra_params = {'e':0.6}
 
 paramvec=np.linspace(args.min,args.max,args.ns)
 for j in range(args.ns):
