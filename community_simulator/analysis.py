@@ -78,3 +78,26 @@ def PostProcess(folder,date,cutoff=0):
             j+=1
     data.to_excel(folder+'data_'+date+'.xlsx')
     return data
+
+def FlatResult(N,R,params):
+    types = R.index.levels[1]
+    n_wells = len(N.keys())
+    Nflat = N.loc[N.index.levels[0][0]].T
+    Nflat.index = np.arange(n_wells)
+    metadata = pd.DataFrame()
+    metadata['Community'] = np.arange(n_wells)
+    metadata['Food'] = params['Food'].loc[N.index.levels[0][0]]
+    
+    k=1
+    for rn in N.index.levels[0][1:]:
+        Nflat_temp = N.loc[N.index.levels[0][rn]].T
+        Nflat_temp.index = np.arange(n_wells)+k*n_wells
+        metadata_temp = pd.DataFrame()
+        metadata_temp['Community'] = np.arange(n_wells)
+        metadata_temp['Food'] = params['Food'].loc[rn]
+        metadata_temp.index = Nflat_temp.index
+        Nflat = Nflat.append(Nflat_temp)
+        metadata = metadata.append(metadata_temp)
+        k+=1
+    metadata['Food Type'] = types[R.index.labels[1][metadata['Food']]]
+    return Nflat, metadata
