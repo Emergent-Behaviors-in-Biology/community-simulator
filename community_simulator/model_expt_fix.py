@@ -45,7 +45,7 @@ with open(filenames[5],'rb') as f:
     N0 = pickle.load(f)[0]
 
 for k in range(args.start,M):
-    kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,'SA':50,'Sgen':0,'S':20,
+    kwargs = {'food_type':k,'run_number':k,'n_iter':args.n_iter,'T':T,'c1':2,'SA':50,'Sgen':0,'S':20,
               'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types}
     kwargs.update({'params':params,'N0':N0.values})
 
