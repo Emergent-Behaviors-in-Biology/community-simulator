@@ -89,6 +89,8 @@ class Community:
         if scale == None:
             scale = self.scale #Use scale from initialization by default
         f = np.asarray(f_in) #Allow for f to be a dataframe
+        self.N[self.N<0] = 0
+        self.R[self.R<0] = 0
         N_tot = np.sum(self.N)
         R_tot = np.sum(self.R)
         N = np.zeros(np.shape(self.N))
@@ -110,7 +112,6 @@ class Community:
         #In continuous culture, it is useful to eliminate the resources that are
         #going extinct, to avoid numerical instability
         else:
-            self.R[self.R<0] = 0
             R_tot = np.sum(self.R)
             R = np.zeros(np.shape(self.R))
             for k in range(self.n_wells):
