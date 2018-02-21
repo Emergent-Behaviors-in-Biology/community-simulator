@@ -46,9 +46,9 @@ class Community:
         
         self.scale = scale
             
-    def dydt(self,y,t):
-        return np.hstack([self.dNdt(y[:self.S],y[self.S:],self.params),
-                          self.dRdt(y[:self.S],y[self.S:],self.params)])
+    def dydt(self,y,t,params,S_comp):
+        return np.hstack([self.dNdt(y[:S_comp],y[S_comp:],params),
+                          self.dRdt(y[:S_comp],y[S_comp:],params)])
 
     def copy(self):
         return copy.deepcopy(self)
@@ -71,9 +71,10 @@ class Community:
         self.S, self.n_wells = np.shape(self.N)
         self.M = np.shape(self.R)[0]
             
-    def Propagate(self,T):
+    def Propagate(self,T,compress_resources=False):
         y_in = self.N.append(self.R).T.values
-        IntegrateTheseWells = partial(IntegrateWell,self,T=T)
+        IntegrateTheseWells = partial(IntegrateWell,self,self.params,
+                                      T=T,compress_resources=compress_resources)
         
         pool = Pool()
         y_out = np.asarray(pool.map(IntegrateTheseWells,y_in)).squeeze().T
@@ -135,13 +136,13 @@ class Community:
         return N_traj, R_traj
     
     
-    def TestWell(self,T = 4,well_name = None,f0 = 1e-3,log_time = False,ns=100):
+    def TestWell(self,T = 4,well_name = None,f0 = 1e-3,ns=100,log_time = False,compress_resources=False):
         if well_name == None:
             well_name = self.N.keys()[0]
         N_well = self.N.copy()[well_name] * f0
         R_well = self.R.copy()[well_name]
-        t, out = IntegrateWell(self,N_well.append(R_well).values,
-                               T=T,ns=ns,return_all=True,log_time=log_time)
+        t, out = IntegrateWell(self,self.params,N_well.append(R_well).values,T=T,ns=ns,
+                               return_all=True,log_time=log_time,compress_resources=compress_resources)
         f, axs = plt.subplots(2,sharex=True)
         Ntraj = out[:,:self.S]
         Rtraj = out[:,self.S:]

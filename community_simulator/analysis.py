@@ -33,19 +33,27 @@ def FormatPath(folder):
                 folder = folder+'/'
     return folder
 
-def LoadData(folder,date,load_all=False):
+def LoadData(folder,date,load_all=False,load_c=True,task_id=None):
     folder = FormatPath(folder)
-    N = pd.read_excel(folder+'Consumers_'+date+'.xlsx',index_col=[0,1,2],header=[0])
-    R = pd.read_excel(folder+'Resources_'+date+'.xlsx',index_col=[0,1,2],header=[0])
-    c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
-    params = pd.read_excel(folder+'Parameters_'+date+'.xlsx',index_col=[0],header=[0])
+    if task_id == None:
+        task_id = ''
+    else:
+        task_id = '_'+str(task_id)
+
+    N = pd.read_excel(folder+'Consumers_'+date+task_id+'.xlsx',index_col=[0,1,2],header=[0])
+    R = pd.read_excel(folder+'Resources_'+date+task_id+'.xlsx',index_col=[0,1,2],header=[0])
+    params = pd.read_excel(folder+'Parameters_'+date+task_id+'.xlsx',index_col=[0],header=[0])
     
+    if load_c:
+        c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
+        return N,R,c,params
     if load_all:
+        c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
         with open(folder+'Realization_'+date+'.dat','rb') as f:
             full_params = pickle.load(f)
         return N,R,c,params,full_params
     else:
-        return N,R,c,params
+        return N,R,params
 
 def ComputeIPR(df):
     IPR = pd.DataFrame(columns=df.keys(),index=df.index.levels[0])
@@ -84,20 +92,28 @@ def FlatResult(N,R,params):
     n_wells = len(N.keys())
     Nflat = N.loc[N.index.levels[0][0]].T
     Nflat.index = np.arange(n_wells)
+    Rflat = R.loc[R.index.levels[0][0]].T
+    Rflat.index = np.arange(n_wells)
     metadata = pd.DataFrame()
     metadata['Community'] = np.arange(n_wells)
-    metadata['Food'] = params['Food'].loc[N.index.levels[0][0]]
+    for item in params:
+        metadata[item] = params[item].loc[N.index.levels[0][0]]
+    metadata.index = np.arange(n_wells)
     
     k=1
     for rn in N.index.levels[0][1:]:
         Nflat_temp = N.loc[N.index.levels[0][rn]].T
         Nflat_temp.index = np.arange(n_wells)+k*n_wells
+        Rflat_temp = R.loc[N.index.levels[0][rn]].T
+        Rflat_temp.index = np.arange(n_wells)+k*n_wells
         metadata_temp = pd.DataFrame()
         metadata_temp['Community'] = np.arange(n_wells)
-        metadata_temp['Food'] = params['Food'].loc[rn]
+        for item in params:
+            metadata_temp[item] = params[item].loc[rn]
         metadata_temp.index = Nflat_temp.index
         Nflat = Nflat.append(Nflat_temp)
+        Rflat = Rflat.append(Rflat_temp)
         metadata = metadata.append(metadata_temp)
         k+=1
     metadata['Food Type'] = types[R.index.labels[1][metadata['Food']]]
-    return Nflat, metadata
+    return Nflat, Rflat, metadata
