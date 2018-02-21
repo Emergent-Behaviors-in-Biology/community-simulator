@@ -69,7 +69,7 @@ for j in range(len(Kvec)):
             N0.to_excel(filenames[3])
             for q in range(3):
                 out[q].to_excel(filenames[q])
-                kwargs.update({'params':params,'N0':N0.values})
+            kwargs.update({'params':params,'N0':N0.values})
         #ON SUBSEQUENT RUNS, APPEND NEW RESULTS TO FILES
         else:
             for q in range(3):
