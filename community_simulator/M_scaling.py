@@ -20,7 +20,7 @@ parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
 
 #folder = 'test'
-folder = '/project/biophys/microbial_crm/'+args.param+'data/'+args.extra_param
+folder = '/project/biophys/microbial_crm/MAdata'
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
