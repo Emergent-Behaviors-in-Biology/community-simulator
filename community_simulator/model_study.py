@@ -65,22 +65,19 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
                 }
     else:
         params['e'] = e
+        
     N0,R0 = usertools.AddLabels(N0,R0,params['c'])
     init_state = [N0,R0]
     params['R0']=R0.values[:,0]
     MyPlate = Community(init_state,dynamics,params)
     
-    try:
-        Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
-        if extra_time:
-            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=1e6)
-            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
-        MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
-        richness = np.mean((MyPlate.N>0).sum().values)
-    except:
-        richness = np.nan
-        Ntraj = np.nan
-        Rtraj = np.nan
+    Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
+    if extra_time:
+        Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=1e6)
+        Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
+    MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
+    richness = np.mean((MyPlate.N>0).sum().values)
+
     
     final_state = [MyPlate.N.copy(), MyPlate.R.copy()]
     for j in range(2):

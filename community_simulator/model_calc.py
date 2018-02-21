@@ -31,7 +31,7 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 #ITERATIONS, ETC.
 n_iter = 100
 trials = 10
-ns = 10
+ns = 100
 T=5
 
 #CHOOSE PARAMETERS
@@ -65,10 +65,10 @@ for j in range(len(Kvec)):
             params = out[4]
             with open(filenames[4],'wb') as f:
                 pickle.dump(params,f)
-            N0 = out[5].loc[0].T
-            N0.to_excel(filenames[3])
             for q in range(3):
                 out[q].to_excel(filenames[q])
+            N0 = out[5].loc[0].T
+            N0.to_excel(filenames[3])
             kwargs.update({'params':params,'N0':N0.values})
         #ON SUBSEQUENT RUNS, APPEND NEW RESULTS TO FILES
         else:
