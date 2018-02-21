@@ -20,7 +20,7 @@ dynamics = [dNdt,dRdt]
 
 def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
                  MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
-                 params=None,N0=None):
+                 params=None,N0=None,extra_time=False):
     
     MA = int(round(MA))
     SA = int(round(SA))
@@ -55,7 +55,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
     if params is None:
         c, D = usertools.MakeMatrices(params=sample_par, kind='Binary', waste_ind=n_types-1)
         params={'c':c,
-                'm':np.ones(S_tot)*0.5+np.random.rand(S_tot),
+                'm':np.ones(S_tot)+0.1*np.random.randn(S_tot),
                 'w':np.ones(M),
                 'D':D,
                 'g':np.ones(S_tot),
@@ -63,6 +63,8 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
                 'r':1.,
                 'tau':1
                 }
+    else:
+        params['e'] = e
     N0,R0 = usertools.AddLabels(N0,R0,params['c'])
     init_state = [N0,R0]
     params['R0']=R0.values[:,0]
@@ -70,7 +72,10 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
     
     try:
         Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
-        MyPlate.Passage(np.eye(n_wells),refresh_resource=False)
+        if extra_time:
+            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=1e6)
+            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
+        MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
         richness = np.mean((MyPlate.N>0).sum().values)
     except:
         richness = np.nan
