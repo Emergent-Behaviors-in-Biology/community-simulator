@@ -49,7 +49,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
     if N0 is None:
         N0 = np.zeros((S_tot,n_wells))
         for k in range(n_wells):
-            N0[np.random.choice(S_tot,size=S,replace=False),k]=1e-3/S
+            N0[np.random.choice(S_tot,size=S,replace=False),k]=1.
 
     #Create parameter set
     if params is None:
