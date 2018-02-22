@@ -103,8 +103,8 @@ def FlatResult(N,R,params):
     k=1
     for rn in N.index.levels[0][1:]:
         Nflat_temp = N.loc[N.index.levels[0][rn]].T
-        Nflat_temp.index = np.arange(n_wells)+k*n_wells
         Rflat_temp = R.loc[N.index.levels[0][rn]].T
+        Nflat_temp.index = np.arange(n_wells)+k*n_wells
         Rflat_temp.index = np.arange(n_wells)+k*n_wells
         metadata_temp = pd.DataFrame()
         metadata_temp['Community'] = np.arange(n_wells)
