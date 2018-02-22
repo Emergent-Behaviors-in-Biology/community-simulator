@@ -31,7 +31,7 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 #ITERATIONS, ETC.
 n_iter = 100
 trials = 10
-ns = 100
+ns = 10
 T=5
 
 #CHOOSE PARAMETERS
