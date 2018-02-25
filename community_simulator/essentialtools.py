@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Oct 19 11:05:55 2017
@@ -11,6 +11,9 @@ import numpy as np
 from scipy import integrate
 
 def IntegrateWell(CommunityInstance,params,y0,T=1,ns=2,return_all=False,log_time=False,compress_resources=False):
+    """
+    Integrator for Propagate and TestWell methods of the Community class
+    """
     #MAKE LOGARITHMIC TIME AXIS FOR LONG SINGLE RUNS
     if log_time:
         t = np.exp(np.linspace(0,np.log(T),ns))
@@ -55,6 +58,15 @@ def IntegrateWell(CommunityInstance,params,y0,T=1,ns=2,return_all=False,log_time
         return yf
     
 def TimeStamp(data,t,group='Well'):
+    """
+    Use Pandas multiindex to record the time that a sample was taken.
+    
+    data = array to be stamped
+    
+    t = time
+    
+    group = orientation of array
+    """
     if group == 'Well':
         data_time = data.copy().T
         mdx = pd.MultiIndex.from_product([[t],data_time.index],names=['Time','Well'])
@@ -63,6 +75,5 @@ def TimeStamp(data,t,group='Well'):
         mdx = pd.MultiIndex.from_product([[t],data.index],names=['Time','Species'])
     else:
         return 'Invalid group choice'
-        
     data_time.index = mdx
     return data_time
