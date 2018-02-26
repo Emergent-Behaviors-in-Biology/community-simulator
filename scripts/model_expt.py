@@ -42,7 +42,7 @@ for j in range(args.ind_trials):
     first_run = True
     
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,'SA':50,'Sgen':0,'S':20,
+        kwargs = {'food':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,'SA':50,'Sgen':0,'S':20,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types}
         if not first_run:
             kwargs.update({'params':params,'N0':N0.values})
