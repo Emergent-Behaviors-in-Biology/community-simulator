@@ -25,7 +25,7 @@ parser.add_argument("n_iter", type=int)
 parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
 
-valid_params=['K' ,'q', 'e', 'fs', 'fw', 'food_type', 'Ddiv', 'n_types', 'c1', 'MA', 'SA', 'Sgen', 'S', 'n_wells']
+valid_params=['K' ,'q', 'e', 'fs', 'fw', 'food', 'Ddiv', 'n_types', 'c1', 'MA', 'SA', 'Sgen', 'S', 'n_wells']
 
 assert args.param in valid_params, 'Invalid choice of variable parameter.'
 assert args.extra_param in valid_params+['None'], 'Invalid choice of extra parameter.'
