@@ -15,9 +15,14 @@ import datetime
 import pickle
 
 parser = argparse.ArgumentParser()
+parser.add_argument("extra_param", type=str)
+parser.add_argument("extra_param_val", type=float)
 parser.add_argument("n_iter", type=int)
 parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
+
+valid_params=['K' ,'q', 'e', 'fs', 'fw', 'food_type', 'Ddiv', 'n_types', 'c1', 'MA', 'SA', 'Sgen', 'S']
+assert args.extra_param in valid_params+['None'], 'Invalid choice of extra parameter.'
 
 #folder = 'test'
 folder = '/project/biophys/microbial_crm/MAdata'
@@ -30,6 +35,11 @@ filenames.append(folder+'/'+datanames[4]+'_'+str(datetime.datetime.now()).split(
 
 T=5
 
+if args.extra_param != 'None':
+    extra_params = {args.extra_param:args.extra_param_val}
+else:
+    extra_params = {}
+
 #Hold p = muc/(c1*M) fixed
 MAvec = np.arange(12,25)
 c1vec = 25./MAvec
@@ -40,6 +50,7 @@ for j in range(ns):
     for k in range(args.ind_trials):
         kwargs = {'MA':MAvec[j],'c1':c1vec[j],'run_number':j*args.ind_trials+k,
                   'n_iter':args.n_iter,'T':T,'extra_time':True,'n_wells':10}
+        kwargs.update(extra_params)
         out = RunCommunity(**kwargs)
         pickle.dump(out[4],f)
         if j==0 and k==0:
