@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Oct 19 11:09:38 2017
@@ -70,7 +70,7 @@ def PlotTraj(traj_in, dropzeros = False, plottype = 'stack', demechoice = None,
     nplots = len(traj.index.levels[-1])
     f, axs = plt.subplots(nplots, sharex = True, figsize = figsize)
     k = 0
-    if type(axs) != list:
+    if type(axs) not in [list,np.ndarray]:
         axs = [axs]
 
     for item in traj.index.levels[-1]:
