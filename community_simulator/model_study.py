@@ -85,9 +85,10 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=
         final_state[j].set_index('Run Number',append=True,inplace=True)
         final_state[j] = final_state[j].reorder_levels(['Run Number',0,1])
         final_state[j].index.names=[None,None,None]
-        
-    params_in = pd.DataFrame([K,q,e,fs,fw,Ddiv,M,S,food_type,richness],columns=[run_number],
-                             index=['K','q','e','fs','fw','Ddiv','M','S','Food','Rich']).T
+    
+    c1 = np.max(MyPlate.params['c'].reshape(-1))-np.min(MyPlate.params['c'].reshape(-1))
+    params_in = pd.DataFrame([K,q,e,c1,fs,fw,Ddiv,M,S,food_type,richness],columns=[run_number],
+                             index=['K','q','e','c1','fs','fw','Ddiv','M','S','Food','Rich']).T
 
     c_matrix = pd.DataFrame(params['c'].copy(),columns=MyPlate.R.index,index=MyPlate.N.index)
     c_matrix['Run Number']=run_number
