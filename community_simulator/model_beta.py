@@ -22,7 +22,7 @@ datanames = ['Consumers','Resources','Parameters','Initial_State','Realization']
 suff = ['.xlsx']*4+['.dat']
 ic = [[0,1,2],[0,1,2],0]
 h = [0,0,0]
-filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'_'+str(args.task_ID)+suff[j] for j in range(5)]
+filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+suff[j] for j in range(5)]
 
 #ITERATIONS, ETC.
 n_iter = 100
