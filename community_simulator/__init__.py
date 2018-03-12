@@ -64,7 +64,7 @@ class Community:
         
         #SAVE PARAMETERS
         self.params = params.copy()
-        for item in self.params:#strip parameters from DataFrames if necessary
+        for item in self.params:#strip parameters from DataFrames if necessary, or convert from list to array
             if isinstance(self.params[item],pd.DataFrame):
                 self.params[item]=self.params[item].values.squeeze()
             elif isinstance(self.params[item],list):

@@ -11,8 +11,9 @@ import pandas as pd
 from numpy.random import dirichlet
 
 #DEFAULT PARAMETERS FOR CONSUMER AND METABOLIC MATRICES
-metaparams_default = {'SA': 20*np.ones(4), #Number of species in each family
-          'MA': 25*np.ones(4), #Number of resources of each type
+metaparams_default = {'SA': 20, #Number of species in each family
+          'MA': 25, #Number of resources of each type
+          'n_types': 4, #Number of resource types
           'Sgen': 20, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates in Gaussian model
           'sigc': .01, #Standard deviation in consumption rate in Gaussian model
@@ -51,65 +52,66 @@ def MakeMatrices(metaparams = metaparams_default, kind='Gaussian'):
     D = metabolic matrix
     """
     #PREPARE VARIABLES
+    mp = metaparams.copy()
     #Default waste type is last type in list:
-    if 'waste_type' not in metaparams.keys():
-        metaparams['waste_type']=len(metaparams['MA'])-1
+    if 'waste_type' not in mp.keys():
+        mp['waste_type']=mp['n_types']-1
     #Force numbers of species to be integers:
-    metaparams['MA'] = np.asarray(metaparams['MA'],dtype=int)
-    metaparams['SA'] = np.asarray(metaparams['SA'],dtype=int)
-    metaparams['Sgen'] = int(metaparams['Sgen'])
+    mp['MA'] = np.asarray(mp['MA']*np.ones(mp['n_types']),dtype=int)
+    mp['SA'] = np.asarray(mp['SA']*np.ones(mp['n_types']),dtype=int)
+    mp['Sgen'] = int(mp['Sgen'])
     #Extract total numbers of resources, consumers, resource types, and consumer families:
-    M = np.sum(metaparams['MA'])
-    T = len(metaparams['MA'])
-    S = np.sum(metaparams['SA'])+metaparams['Sgen']
-    F = len(metaparams['SA'])
-    M_waste = metaparams['MA'][metaparams['waste_type']]
+    M = np.sum(mp['MA'])
+    T = len(mp['MA'])
+    S = np.sum(mp['SA'])+mp['Sgen']
+    F = len(mp['SA'])
+    M_waste = mp['MA'][mp['waste_type']]
     #Construct lists of names of resources, consumers, resource types, and consumer families:
     resource_names = ['R'+str(k) for k in range(M)]
     type_names = ['T'+str(k) for k in range(T)]
     family_names = ['F'+str(k) for k in range(F)]
     consumer_names = ['S'+str(k) for k in range(S)]
-    waste_name = type_names[metaparams['waste_type']]
-    resource_index = [[type_names[m] for m in range(T) for k in range(metaparams['MA'][m])],
+    waste_name = type_names[mp['waste_type']]
+    resource_index = [[type_names[m] for m in range(T) for k in range(mp['MA'][m])],
                       resource_names]
-    consumer_index = [[family_names[m] for m in range(F) for k in range(metaparams['SA'][m])]
-                      +['GEN' for k in range(metaparams['Sgen'])],consumer_names]
+    consumer_index = [[family_names[m] for m in range(F) for k in range(mp['SA'][m])]
+                      +['GEN' for k in range(mp['Sgen'])],consumer_names]
     
     
     #PERFORM GAUSSIAN SAMPLING
     if kind == 'Gaussian':
         #Sample Gaussian random numbers with standard deviation sigc:
-        c = pd.DataFrame(np.random.randn(S,M)*metaparams['sigc'],
+        c = pd.DataFrame(np.random.randn(S,M)*mp['sigc'],
                      columns=resource_index,index=consumer_index)
         #Add mean values, biasing consumption of each family towards its preferred resource:
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (metaparams['muc']/M)*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
+                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (mp['muc']/M)*(1+mp['q']*(M-mp['MA'][j])/mp['MA'][j])
                 else:
-                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (metaparams['muc']/M)*(1-metaparams['q'])
+                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (mp['muc']/M)*(1-mp['q'])
         if 'GEN' in c.index:
-            c.loc['GEN'] = c.loc['GEN'].values + (metaparams['muc']/M)
+            c.loc['GEN'] = c.loc['GEN'].values + (mp['muc']/M)
                     
     #PERFORM BINARY SAMPLING
     elif kind == 'Binary':
-        assert metaparams['muc'] < M*metaparams['c1'], 'muc not attainable with given M and c1.'
+        assert mp['muc'] < M*mp['c1'], 'muc not attainable with given M and c1.'
         #Construct uniform matrix at background consumption rate c0:
-        c = pd.DataFrame(np.ones((S,M))*metaparams['c0'],columns=resource_index,index=consumer_index)
+        c = pd.DataFrame(np.ones((S,M))*mp['c0'],columns=resource_index,index=consumer_index)
         #Sample binary random matrix blocks for each pair of family/resource type:
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    p = (metaparams['muc']/(M*metaparams['c1']))*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
+                    p = (mp['muc']/(M*mp['c1']))*(1+mp['q']*(M-mp['MA'][j])/mp['MA'][j])
                 else:
-                    p = (metaparams['muc']/(M*metaparams['c1']))*(1-metaparams['q'])
+                    p = (mp['muc']/(M*mp['c1']))*(1-mp['q'])
                     
                 c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
-                                                + metaparams['c1']*BinaryRandomMatrix(metaparams['SA'][k],metaparams['MA'][j],p))
+                                                + mp['c1']*BinaryRandomMatrix(mp['SA'][k],mp['MA'][j],p))
         #Sample uniform binary random matrix for generalists:
         if 'GEN' in c.index:
-            p = metaparams['muc']/(M*metaparams['c1'])
-            c.loc['GEN'] = c.loc['GEN'].values + metaparams['c1']*BinaryRandomMatrix(metaparams['Sgen'],M,p)
+            p = mp['muc']/(M*mp['c1'])
+            c.loc['GEN'] = c.loc['GEN'].values + mp['c1']*BinaryRandomMatrix(mp['Sgen'],M,p)
     
     else:
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
@@ -120,13 +122,13 @@ def MakeMatrices(metaparams = metaparams_default, kind='Gaussian'):
     for type_name in type_names:
         MA = len(DT.loc[type_name])
         #Set background secretion levels:
-        p = pd.Series(np.ones(M)*(1-metaparams['fs']-metaparams['fw'])/(M-MA-M_waste),index = DT.keys())
+        p = pd.Series(np.ones(M)*(1-mp['fs']-mp['fw'])/(M-MA-M_waste),index = DT.keys())
         #Set self-secretion level:
-        p.loc[type_name] = metaparams['fs']/MA
+        p.loc[type_name] = mp['fs']/MA
         #Set waste secretion level:
-        p.loc[waste_name] = metaparams['fw']/M_waste
+        p.loc[waste_name] = mp['fw']/M_waste
         #Sample from dirichlet:
-        DT.loc[type_name] = dirichlet(p/metaparams['D_diversity'],size=MA)
+        DT.loc[type_name] = dirichlet(p/mp['D_diversity'],size=MA)
         
     return c, DT.T
 
