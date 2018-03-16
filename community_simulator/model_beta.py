@@ -14,6 +14,10 @@ import pandas as pd
 import datetime
 import pickle
 
+parser = argparse.ArgumentParser()
+parser.add_argument("S", type=int)
+args = parser.parse_args()
+
 #SET UP FILE NAMES
 #folder = 'test'
 folder = '/project/biophys/microbial_crm/data'
@@ -38,7 +42,8 @@ kwargs ={'K':Kvec[0],
         'n_iter':n_iter,
         'T':T,
         'n_wells':trials,
-        'extra_time':True
+        'extra_time':True,
+        'S':args.S
         }
 
 #LOOP THROUGH PARAMETERS
