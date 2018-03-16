@@ -20,7 +20,7 @@ args = parser.parse_args()
 
 #SET UP FILE NAMES
 #folder = 'test'
-folder = '/project/biophys/microbial_crm/data'
+folder = '/project/biophys/microbial_crm/data/S_'+str(args.S)
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','Initial_State','Realization']
 suff = ['.xlsx']*4+['.dat']
@@ -30,7 +30,7 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 
 #ITERATIONS, ETC.
 n_iter = 100
-trials = 999
+trials = 200
 T=5
 
 #CHOOSE PARAMETERS
