@@ -8,19 +8,19 @@ table = dynamodb.create_table(
     TableName='Metadata',
     KeySchema=[
         {
-            'AttributeName': 'data_ID',
+            'AttributeName': 'sample-id',
             'KeyType': 'HASH'  #Partition key
         }
     ],
     AttributeDefinitions=[
         {
-            'AttributeName': 'data_ID',
+            'AttributeName': 'sample-id',
             'AttributeType': 'N'
         },
     ],
     ProvisionedThroughput={
-        'ReadCapacityUnits': 5,
-        'WriteCapacityUnits': 5
+        'ReadCapacityUnits': 1,
+        'WriteCapacityUnits': 1
     }
 )
 
@@ -30,19 +30,19 @@ table = dynamodb.create_table(
                               TableName='Final_State',
                               KeySchema=[
                                          {
-                                         'AttributeName': 'data_ID',
+                                         'AttributeName': 'sample-id',
                                          'KeyType': 'HASH'  #Partition key
                                          }
                                          ],
                               AttributeDefinitions=[
                                                     {
-                                                    'AttributeName': 'data_ID',
+                                                    'AttributeName': 'sample-id',
                                                     'AttributeType': 'N'
                                                     },
                                                     ],
                               ProvisionedThroughput={
-                              'ReadCapacityUnits': 5,
-                              'WriteCapacityUnits': 5
+                              'ReadCapacityUnits': 1,
+                              'WriteCapacityUnits': 1
                               }
                               )
 
@@ -63,8 +63,8 @@ table = dynamodb.create_table(
                                                     },
                                                     ],
                               ProvisionedThroughput={
-                              'ReadCapacityUnits': 5,
-                              'WriteCapacityUnits': 5
+                              'ReadCapacityUnits': 1,
+                              'WriteCapacityUnits': 1
                               }
                               )
 
@@ -85,8 +85,8 @@ table = dynamodb.create_table(
                                                     },
                                                     ],
                               ProvisionedThroughput={
-                              'ReadCapacityUnits': 5,
-                              'WriteCapacityUnits': 5
+                              'ReadCapacityUnits': 1,
+                              'WriteCapacityUnits': 1
                               }
                               )
 

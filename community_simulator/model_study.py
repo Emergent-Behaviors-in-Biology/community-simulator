@@ -112,7 +112,8 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food=0,Ddiv=0.2,n_types=4,c1=
           'fw':fw, #Fraction of secretion flux to 'waste' resource
           'D_diversity':0.2, #Variability in secretion fluxes among resources (must be less than 1)
           'waste_type':n_types-1,
-          'Food':food
+          'Food':food,
+          'S':S
          }
     
     #DEFINE INITIAL CONDITIONS
@@ -134,10 +135,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food=0,Ddiv=0.2,n_types=4,c1=
         #Load initial conditions from database
         N0 = []
         for key in init_keys:
-            response = initial_db.query(
-                                        ProjectionExpression="Consumers",
-                                        KeyConditionExpression=Key('key').eq(key)
-                                        )
+            response = initial_db.query(KeyConditionExpression=Key('key').eq(key))
             N0.append(json.loads(response['Items'][0]['Consumers']))
         N0 = np.asarray(N0).T
         n_wells = len(init_keys)
@@ -162,9 +160,7 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food=0,Ddiv=0.2,n_types=4,c1=
                           'Resource_Names':json.dumps(list(c.keys())),
                           'Consumer_Names':json.dumps(list(c.index))})
     else:
-        response = parameters_db.query(ProjectionExpression="Parameters",
-                                       KeyConditionExpression=Key('key').eq(param_key)
-                                       )
+        response = parameters_db.query(KeyConditionExpression=Key('key').eq(param_key))
         params=json.loads(response['Items'][0]['Parameters'])
         params['e'] = e
         
@@ -186,14 +182,13 @@ def RunCommunity(K=500.,q=0.,e=0.2,fs=0.25,fw=0.25,food=0,Ddiv=0.2,n_types=4,c1=
         if type(metadata[item]) == float:
             metadata[item] = Decimal(str(metadata[item]))
     for k in range(n_wells):
-        final_db.put_item(Item={'data_ID':data_ID[k],
+        final_db.put_item(Item={'sample-id':data_ID[k],
                           'Consumers':json.dumps(list(MyPlate.N.values[:,k])),
                           'Resources':json.dumps(list(MyPlate.R.values[:,k]))
                           })
-        metadata['data_ID'] = data_ID[k]
+        metadata['sample-id'] = data_ID[k]
         metadata['Initial_State'] = init_keys[k]
         metadata['Parameters'] = param_key
-        print(metadata)
         metadata_db.put_item(Item=metadata)
 
-    return {'data_ID':data_ID,'init_key':init_keys,'param_key':param_key}
+    return {'sample-id':data_ID,'init_key':init_keys,'param_key':param_key}
