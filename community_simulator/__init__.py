@@ -45,17 +45,19 @@ class Community:
             of population noise. 
         """
         #SAVE INITIAL STATE
-        self.N, self.R = init_state
-        if not isinstance(self.N, pd.DataFrame):#add labels to consumer state
-            column_names = ['W'+str(k) for k in range(np.shape(self.N)[1])]
-            species_names = ['S'+str(k) for k in range(np.shape(self.N)[0])]
-            self.N = pd.DataFrame(self.N,columns=column_names)
-            self.N.index = species_names
-        if not isinstance(self.R, pd.DataFrame):#add labels to resource state
-            resource_names = ['R'+str(k) for k in range(np.shape(self.R)[0])]
-            self.R = pd.DataFrame(self.R,columns=self.N.keys())
-            self.R.index = resource_names
-        self.R0 = self.R.copy() #(for refreshing media on passaging if "refresh_resource" is turned on)
+        N, R = init_state
+        if not isinstance(N, pd.DataFrame):#add labels to consumer state
+            column_names = ['W'+str(k) for k in range(np.shape(N)[1])]
+            species_names = ['S'+str(k) for k in range(np.shape(N)[0])]
+            N = pd.DataFrame(self.N,columns=column_names)
+            N.index = species_names
+        if not isinstance(R, pd.DataFrame):#add labels to resource state
+            resource_names = ['R'+str(k) for k in range(np.shape(R)[0])]
+            R = pd.DataFrame(R,columns=N.keys())
+            R.index = resource_names
+        self.N = N.copy()
+        self.R = R.copy()
+        self.R0 = R.copy() #(for refreshing media on passaging if "refresh_resource" is turned on)
         self.S, self.n_wells = np.shape(self.N)
         self.M = np.shape(self.R)[0]
         
@@ -243,7 +245,8 @@ class Community:
         return N_traj, R_traj
     
     
-    def TestWell(self,T = 4,well_name = None,f0 = 1.,ns=100,log_time = False,compress_resources=False):
+    def TestWell(self,T = 4,well_name = None,f0 = 1.,ns=100,log_time = False,T0=0,
+                 compress_resources=False,show_plots=True):
         """
         Run a single well and plot the trajectory.
         
@@ -273,21 +276,24 @@ class Community:
         R_well = self.R.copy()[well_name]
         
         #INTEGRATE WELL
-        t, out = IntegrateWell(self,self.params,N_well.append(R_well).values,T=T,ns=ns,
+        t, out = IntegrateWell(self,self.params,N_well.append(R_well).values,T=T,ns=ns,T0=T0,
                                return_all=True,log_time=log_time,compress_resources=compress_resources)
         
-        #PLOT TRAJECTORY
-        f, axs = plt.subplots(2,sharex=True)
         Ntraj = out[:,:self.S]
         Rtraj = out[:,self.S:]
-        if log_time:
-            axs[0].semilogx(t,Ntraj)
-            axs[1].semilogx(t,Rtraj)
-        else:
-            axs[0].plot(t,Ntraj)
-            axs[1].plot(t,Rtraj)
-        axs[0].set_ylabel('Consumer Abundance')
-        axs[1].set_ylabel('Resource Abundance')
-        axs[1].set_xlabel('Time')
-        plt.show()
+        
+        #PLOT TRAJECTORY
+        if show_plots:
+            f, axs = plt.subplots(2,sharex=True)
+
+            if log_time:
+                axs[0].semilogx(t,Ntraj)
+                axs[1].semilogx(t,Rtraj)
+            else:
+                axs[0].plot(t,Ntraj)
+                axs[1].plot(t,Rtraj)
+            axs[0].set_ylabel('Consumer Abundance')
+            axs[1].set_ylabel('Resource Abundance')
+            axs[1].set_xlabel('Time')
+            plt.show()
         return t, Ntraj, Rtraj
