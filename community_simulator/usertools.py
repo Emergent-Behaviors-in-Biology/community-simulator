@@ -16,11 +16,11 @@ metaparams_default = {'SA': 20*np.ones(4), #Number of species in each family
           'Sgen': 20, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates in Gaussian model
           'sigc': .01, #Standard deviation in consumption rate in Gaussian model
-          'q': 2./3, #Preference strength (0 for generalist and 1 for specialist)
+          'q': 0, #Preference strength (0 for generalist and 1 for specialist)
           'c0':0.01, #Background consumption rate in binary model
           'c1':1., #Specific consumption rate in binary model
-          'fs':0.2, #Fraction of secretion flux with same resource type
-          'fw':0.7, #Fraction of secretion flux to 'waste' resource
+          'fs':0.25, #Fraction of secretion flux with same resource type
+          'fw':0.25, #Fraction of secretion flux to 'waste' resource
           'D_diversity':0.2, #Variability in secretion fluxes among resources (must be less than 1)
           'waste_type':0 #Resource type to designate as "waste"
          }

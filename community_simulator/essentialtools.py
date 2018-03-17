@@ -10,15 +10,15 @@ import pandas as pd
 import numpy as np
 from scipy import integrate
 
-def IntegrateWell(CommunityInstance,params,y0,T=1,ns=2,return_all=False,log_time=False,compress_resources=False):
+def IntegrateWell(CommunityInstance,params,y0,T0=0,T=1,ns=2,return_all=False,log_time=False,compress_resources=False):
     """
     Integrator for Propagate and TestWell methods of the Community class
     """
     #MAKE LOGARITHMIC TIME AXIS FOR LONG SINGLE RUNS
     if log_time:
-        t = np.exp(np.linspace(0,np.log(T),ns))
+        t = 10**(np.linspace(np.log10(T0),np.log10(T0+T),ns))
     else:
-        t = np.linspace(0,T,ns)
+        t = np.linspace(T0,T0+T,ns)
     
     #COMPRESS STATE AND PARAMETERS TO GET RID OF EXTINCT SPECIES
     S = np.shape(params['c'])[0]
