@@ -46,6 +46,9 @@ else:
     extra_params = {}
 if args.extra_param != 'n_wells':
     extra_params['n_wells'] = 10
+    
+#CHANGED DEFAULT K ON 3/19
+extra_params['K'] = 1000
 
 paramvec=np.linspace(args.min,args.max,args.ns)
 f = open(filenames[4],'wb')
