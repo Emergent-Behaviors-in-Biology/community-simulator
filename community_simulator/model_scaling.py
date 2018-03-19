@@ -30,7 +30,7 @@ assert args.param in valid_params, 'Invalid choice of variable parameter.'
 assert args.extra_param in valid_params+['None'], 'Invalid choice of extra parameter.'
 
 #folder = 'test'
-folder = '/project/biophys/microbial_crm/'+args.param+'data/'+args.extra_param
+folder = '/project/biophys/microbial_crm/'+args.param+'data/'+args.extra_param+str(args.extra_param_val)
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]
@@ -46,7 +46,7 @@ else:
     extra_params = {}
 if args.extra_param != 'n_wells':
     extra_params['n_wells'] = 10
-    
+
 #CHANGED DEFAULT K ON 3/19
 extra_params['K'] = 1000
 
