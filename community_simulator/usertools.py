@@ -142,7 +142,7 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
                              *params['w']*sigma[response](R,params))
-    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'])
+    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
     
     return lambda N,R,params: (h[replenishment](R,params)
                                -(F_in(R,params)/params['w']).T.dot(N)
