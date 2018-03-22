@@ -14,6 +14,7 @@ from scipy.cluster import hierarchy
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.cluster import k_means
+from matplotlib.backends import backend_pdf as bpdf
 
 def NonzeroColumns(data,thresh=0):
     return data.keys()[np.where(np.sum(data)>thresh)]
@@ -168,3 +169,45 @@ def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None):
         ax.set_title(title,fontsize=fs+4)
 
     return ax
+
+def CompositionPlot(data,n_wells=10,PCA_examples=False,drop_zero=False,thresh=1e-6,title='test'):
+    if drop_zero:
+        data = data.loc[(data.T>thresh).any()]
+    def_colors = sns.color_palette("RdBu_r",len(data))
+    well_colors = sns.color_palette("RdBu_r",n_wells)
+    PCA_model = PCA(n_components=2).fit(data.T)
+    explained_variance = np.around(100*PCA_model.explained_variance_ratio_,decimals=1)
+    N_PCA = PCA_model.transform(data.T)
+    
+    fig,axs=plt.subplots(2,figsize=(5,8))
+    fig.subplots_adjust(hspace=0.3,left=0.2)
+    axs[0].scatter(N_PCA[:,0],N_PCA[:,1],marker='.',color='gray')
+        
+    axs[0].set_xlabel('PCA 1 ('+str(explained_variance[0])+' %)',fontsize=14)
+    axs[0].set_ylabel('PCA 2 ('+str(explained_variance[1])+' %)',fontsize=14)
+
+    names = data.keys()[:n_wells]
+    dominant = np.argmax(data.values,axis=0)[:n_wells]
+    dominant_idx = list(set(dominant))
+    names = np.array(list(zip(names,dominant)),dtype=[('well','S30'),('dominant',int)])
+    names_sort = np.asarray(np.sort(names,order='dominant')['well'],dtype=str)
+
+    f = data[names_sort]/data[names_sort].sum()
+    
+    f.copy().T.plot.bar(stacked=True,legend=False,ax=axs[1],color = def_colors)
+    axs[1].set_xticks(())
+
+    if PCA_examples:
+        for well in range(n_wells):
+            axs[0].plot(N_PCA[well,0],N_PCA[well,1],marker='o',color = well_colors[well])
+            axs[1].plot(np.where(names_sort==data.keys()[well])[0][0],1.1,marker='o',color = well_colors[well])
+    
+    axs[0].set_title(title,fontsize=18)
+    axs[1].set_ylabel('Composition',fontsize=14)
+    axs[1].set_xlabel('Community',fontsize=14)
+
+    pdf = bpdf.PdfPages('../Plots/PCA_'+title+'.pdf')
+    pdf.savefig(fig)
+    pdf.close()
+
+    plt.show()
