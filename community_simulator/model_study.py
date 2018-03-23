@@ -18,7 +18,7 @@ def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-def RunCommunity(K=500.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
+def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
                  MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
                  params=None,N0=None,extra_time=False):
     
