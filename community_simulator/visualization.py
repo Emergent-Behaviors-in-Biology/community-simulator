@@ -208,10 +208,10 @@ def CompositionPlot(data,n_wells=10,PCA_examples=False,drop_zero=False,thresh=1e
     
     fig,axs=plt.subplots(2,figsize=(5,8))
     fig.subplots_adjust(hspace=0.3,left=0.2)
-    axs[0].scatter(N_PCA[:,0],N_PCA[:,1],marker='.',color='gray')
+    axs[1].scatter(N_PCA[:,0],N_PCA[:,1],marker='.',color='gray')
         
-    axs[0].set_xlabel('PCA 1 ('+str(explained_variance[0])+' %)',fontsize=14)
-    axs[0].set_ylabel('PCA 2 ('+str(explained_variance[1])+' %)',fontsize=14)
+    axs[1].set_xlabel('PCA 1 ('+str(explained_variance[0])+' %)',fontsize=14)
+    axs[1].set_ylabel('PCA 2 ('+str(explained_variance[1])+' %)',fontsize=14)
 
     names = data.keys()[:n_wells]
     dominant = np.argmax(data.values,axis=0)[:n_wells]
@@ -221,17 +221,17 @@ def CompositionPlot(data,n_wells=10,PCA_examples=False,drop_zero=False,thresh=1e
 
     f = data[names_sort]/data[names_sort].sum()
     
-    f.copy().T.plot.bar(stacked=True,legend=False,ax=axs[1],color = def_colors)
-    axs[1].set_xticks(())
+    f.copy().T.plot.bar(stacked=True,legend=False,ax=axs[0],color = def_colors)
+    axs[0].set_xticks(())
 
     if PCA_examples:
         for well in range(n_wells):
-            axs[0].plot(N_PCA[well,0],N_PCA[well,1],marker='o',color = well_colors[well])
-            axs[1].plot(np.where(names_sort==data.keys()[well])[0][0],1.1,marker='o',color = well_colors[well])
+            axs[1].plot(N_PCA[well,0],N_PCA[well,1],marker='o',color = well_colors[well])
+            axs[0].plot(np.where(names_sort==data.keys()[well])[0][0],1.1,marker='o',color = well_colors[well])
     
     axs[0].set_title(title,fontsize=18)
-    axs[1].set_ylabel('Composition',fontsize=14)
-    axs[1].set_xlabel('Community',fontsize=14)
+    axs[0].set_ylabel('Composition',fontsize=14)
+    axs[0].set_xlabel('Community',fontsize=14)
 
     pdf = bpdf.PdfPages('../Plots/PCA_'+title+'.pdf')
     pdf.savefig(fig)
