@@ -170,27 +170,22 @@ def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None):
 
     return ax
 
-def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,maxbin=1,normalize=True):
+def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,maxbin=1,scale=1):
     bins = np.linspace(0,maxbin,nbins)
 
     if ax is None:
         fig,ax=plt.subplots(figsize=(4,4))
         fig.subplots_adjust(bottom=0.2,left=0.2)
-    data = df.copy()
+    data = df.copy()/scale
     for item in params:
         data = data.loc[metadata[item]==params[item]]
-    if normalize:
-        data = data.T/data.T.sum()
     data[data<thresh]=0
     
     data = data.values.reshape(-1)
     data = data[data>0]
 
     ax.hist(data,bins=bins)
-    if normalize:
-        ax.set_xlabel('Relative Abundance',fontsize=fs)
-    else:
-        ax.set_xlabel('Absolute Abundance',fontsize=fs)
+    ax.set_xlabel('Abundance',fontsize=fs)
     ax.set_ylabel('Frequency',fontsize=fs)
     if title is not None:
         ax.set_title(title,fontsize=fs+4)
