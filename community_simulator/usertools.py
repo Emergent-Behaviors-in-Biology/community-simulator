@@ -130,8 +130,8 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
             }
     
     u = {'independent': lambda x,params: 1.,
-         'energy': lambda x,params: (((params['w']*x)**params['nreg']).T
-                                      /np.sum((params['w']*x)**params['nreg'],axis=1)).T,
+         'energy': lambda x,params: (((x*params['w'])**params['nreg']).T
+                                      /np.sum((x*params['w'])**params['nreg'],axis=1)).T,
          'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
         }
     
@@ -141,8 +141,8 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
          'predator': lambda R,params: params['r']*R*(params['R0']-R)-params['u']*R}
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
-                             *params['w']*sigma[response](R,params))
-    F_out = lambda R,params: ((1-params['e'])*F_in(R,params)).dot(params['D'].T)
+                             *sigma[response](R,params)*params['w'])
+    F_out = lambda R,params: (F_in(R,params)*(1-params['e'])).dot(params['D'].T)
     
     return lambda N,R,params: (h[replenishment](R,params)
                                -(F_in(R,params)/params['w']).T.dot(N)
@@ -155,14 +155,14 @@ def MakeConsumerDynamics(response='type I',regulation='independent',replenishmen
             }
     
     u = {'independent': lambda x,params: 1.,
-         'energy': lambda x,params: (((params['w']*x)**params['nreg']).T
-                                      /np.sum((params['w']*x)**params['nreg'],axis=1)).T,
+         'energy': lambda x,params: (((x*params['w'])**params['nreg']).T
+                                      /np.sum((x*params['w'])**params['nreg'],axis=1)).T,
          'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
         }
     
     F_in = lambda R,params: (u[regulation](params['c']*R,params)
-                             *params['w']*sigma[response](R,params))
-    F_growth = lambda R,params: params['e']*F_in(R,params)
+                             *sigma[response](R,params)*params['w'])
+    F_growth = lambda R,params: F_in(R,params)*params['e']
     
     return lambda N,R,params: params['g']*N*(np.sum(F_growth(R,params),axis=1)-params['m'])
 

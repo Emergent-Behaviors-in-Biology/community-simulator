@@ -11,14 +11,14 @@ import numpy as np
 import pandas as pd
 
 #Construct dynamics
-assumptions = {'regulation':'independent','replenishment':'renew','response':'type I'}
+assumptions = {'regulation':'independent','replenishment':'renew','response':'type II'}
 def dNdt(N,R,params):
     return usertools.MakeConsumerDynamics(**assumptions)(N,R,params)
 def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
+def RunCommunity_II(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
                  c0=0.01,muc=10,MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
                  params=None,N0=None,extra_time=False,sample_kind='Binary',
                  sigm=0.1,sigw=0,sige=0):
@@ -69,7 +69,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
                 'e':e+sige*np.random.randn(M),
                 'r':1.,
                 'tau':1,
-                'K':1.5
+                'K':0.2
                 }
     else:
         params['e'] = e
@@ -95,8 +95,8 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
         final_state[j].index.names=[None,None,None]
     
     c1 = np.max(MyPlate.params['c'].reshape(-1))-np.min(MyPlate.params['c'].reshape(-1))
-    params_in = pd.DataFrame([K,q,e,muc,sigc,c1,c0,fs,fw,Ddiv,M,S,food_type,richness,sigm,sigw,sige,sample_kind],columns=[run_number],
-                             index=['K','q','e','muc','sig_c','c1','c0','fs','fw','Ddiv','M','S','Food','Rich','sig_m','sig_w','sig_e','c_sampling']).T
+    params_in = pd.DataFrame([K,q,e,muc,sigc,c1,c0,fs,fw,Ddiv,M,S,food_type,richness,sigm,sigw,sige,sample_kind,'type II'],columns=[run_number],
+                             index=['K','q','e','muc','sig_c','c1','c0','fs','fw','Ddiv','M','S','Food','Rich','sig_m','sig_w','sig_e','c_sampling','response']).T
 
     c_matrix = pd.DataFrame(params['c'].copy(),columns=MyPlate.R.index,index=MyPlate.N.index)
     c_matrix['Run Number']=run_number
