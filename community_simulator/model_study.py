@@ -94,7 +94,6 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
         final_state[j] = final_state[j].reorder_levels(['Run Number',0,1])
         final_state[j].index.names=[None,None,None]
     
-    c1 = np.max(MyPlate.params['c'].reshape(-1))-np.min(MyPlate.params['c'].reshape(-1))
     params_in = pd.DataFrame([K,q,e,muc,sigc,c1,c0,fs,fw,Ddiv,M,S,food_type,richness,sigm,sigw,sige,sample_kind],columns=[run_number],
                              index=['K','q','e','muc','sig_c','c1','c0','fs','fw','Ddiv','M','S','Food','Rich','sig_m','sig_w','sig_e','c_sampling']).T
 
