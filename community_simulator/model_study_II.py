@@ -69,7 +69,7 @@ def RunCommunity_II(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_ty
                 'e':e+sige*np.random.randn(M),
                 'r':1.,
                 'tau':1,
-                'K':0.2
+                'K':20
                 }
     else:
         params['e'] = e

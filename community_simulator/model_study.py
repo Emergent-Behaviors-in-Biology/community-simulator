@@ -28,7 +28,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     Sgen = int(round(Sgen))
     S=int(round(S))
 
-    p = muc/(MA*c1)
+    p = muc/(MA*n_types*c1)
     sigc = np.sqrt(c1**2 * p * (1-p))
     
     sample_par = {'SA': SA*np.ones(n_types), #Number of species in each family
@@ -69,7 +69,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
                 'e':e+sige*np.random.randn(M),
                 'r':1.,
                 'tau':1,
-                'K':1.5
+                'K':20
                 }
     else:
         params['e'] = e
@@ -79,11 +79,16 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     params['R0']=R0.values[:,0]
     MyPlate = Community(init_state,dynamics,params)
     
-    Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
-    if extra_time:
-        Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=1e6)
-        Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
-    MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
+    try:
+        Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
+        if extra_time:
+            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=1e6)
+            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
+        MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
+    except:
+        MyPlate.N = MyPlate.N*np.nan
+        print('Run failed with the following sample parameters: ')
+        print(sample_par)
     richness = np.mean((MyPlate.N>0).sum().values)
 
     
