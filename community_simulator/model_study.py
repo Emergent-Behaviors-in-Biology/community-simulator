@@ -86,6 +86,8 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
             Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
         MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
     except:
+        Ntraj = np.nan
+        Rtraj = np.nan
         MyPlate.N = MyPlate.N*np.nan
         print('Run failed with the following sample parameters: ')
         print(sample_par)
