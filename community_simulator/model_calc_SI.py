@@ -33,7 +33,7 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 n_iter = 100
 trials = 10
 ns = 10
-T=5
+T=0.1
 
 #CHOOSE PARAMETERS
 Kvec = 10**np.linspace(1,3,ns)
