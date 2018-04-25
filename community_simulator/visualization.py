@@ -170,8 +170,12 @@ def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None):
 
     return ax
 
-def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,maxbin=1,scale=1):
-    bins = np.linspace(0,maxbin,nbins)
+def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,
+              minbin=1e-4,maxbin=1,scale=1,log=False):
+    if log:
+        bins = 10**(np.linspace(np.log10(minbin),np.log10(maxbin),nbins))
+    else:
+        bins = np.linspace(0,maxbin,nbins)
 
     if ax is None:
         fig,ax=plt.subplots(figsize=(4,4))
@@ -182,11 +186,13 @@ def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,maxb
     data[data<thresh]=0
     
     data = data.values.reshape(-1)
-    data = data[data>0]
+    #data = data[data>0]
 
     ax.hist(data,bins=bins)
     ax.set_xlabel('Abundance',fontsize=fs)
     ax.set_ylabel('Frequency',fontsize=fs)
+    if log:
+        ax.set_xscale('log')
     if title is not None:
         ax.set_title(title,fontsize=fs+4)
 
