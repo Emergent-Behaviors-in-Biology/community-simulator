@@ -188,7 +188,7 @@ def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,
     data = data.values.reshape(-1)
     #data = data[data>0]
 
-    ax.hist(data,bins=bins)
+    ax.hist(data,bins=bins,normed=True)
     ax.set_xlabel('Abundance',fontsize=fs)
     ax.set_ylabel('Frequency',fontsize=fs)
     if log:
