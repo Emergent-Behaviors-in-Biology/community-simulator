@@ -117,3 +117,125 @@ def FlatResult(N,R,params):
         k+=1
     metadata['Food Type'] = types[R.index.labels[1][metadata['Food']]]
     return Nflat, Rflat, metadata
+
+def Simpson(N):
+    p = N/np.sum(N)
+    return 1./np.sum(p**2)
+
+def Shannon(N):
+    p = N/np.sum(N)
+    p = p[p>0]
+    return np.exp(-np.sum(p*np.log(p)))
+
+def BergerParker(N):
+    p = N/np.sum(N)
+    return 1./np.max(p)
+
+def Richness(N,thresh=0):
+    return np.sum(N>thresh)
+
+metrics = {'Simpson':Simpson,'Shannon':Shannon,'BergerParker':BergerParker,'Richness':Richness}
+
+def CalculateDiversity(df,metadata):
+    metadata_new = metadata.copy()
+    for function in metrics:
+        metadata_new[function]=np.nan
+        for item in df.index:
+            metadata_new.loc[item,function]=metrics[function](df.loc[item].values)
+    return metadata_new
+
+
+def MakeFlux(response='type I',regulation='independent'):
+
+    sigma = {'type I': lambda R,params: params['c']*R,
+             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
+             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
+            }
+    
+    u = {'independent': lambda x,params: 1.,
+         'energy': lambda x,params: (((params['w']*x)**params['nreg']).T
+                                      /np.sum((params['w']*x)**params['nreg'],axis=1)).T,
+         'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
+        }
+    
+    F_in = lambda R,params: (u[regulation](params['c']*R,params)
+                             *params['w']*sigma[response](R,params))
+    
+    return F_in
+
+Jin = MakeFlux()
+
+def J_div(N,R,par,run):
+    Jd = []
+    for well in N.keys():
+        not_extinct = np.where(N.loc[run][well].values > 0)[0]
+        for species in not_extinct:
+            Jd.append(Simpson(Jin(R.loc[run][well].values,par)[species,:]))
+    return Jd
+
+def Susceptibility(N1,R1,beta,par):
+    R1 = np.asarray(R1,dtype=float)
+    N1 = np.asarray(N1,dtype=float)
+    M = len(par['D'])
+    l = 1 - par['e']
+    not_extinct = np.where(N1 > 0)[0]
+
+    c = par['c'][not_extinct,:]
+    Sphi = len(not_extinct)
+    N1 = N1[not_extinct]
+
+    A1 = (par['D']*l-np.eye(M))*(c.T.dot(N1))-np.eye(M)/par['tau']
+    A2 = (par['D']*l-np.eye(M)).dot((c*R1).T)
+    A3 = np.hstack(((1-l)*c,np.zeros((Sphi,Sphi))))
+    A = np.vstack((np.hstack((A1,A2)),A3))
+    b = np.zeros(M+Sphi)
+    b[beta] = -1/par['tau']
+
+    Ainv = np.linalg.inv(A)
+    chieta = Ainv.dot(b)
+
+    chi = chieta[:M]
+    eta = chieta[M:]
+    
+    return chi, eta
+
+def AllChi(N,R,par):
+    chi_diag = []
+    chi_off = []
+    for well in N.keys():
+        N1 = N[well].values
+        R1 = R[well].values
+        for beta in range(len(R1)):
+            chi, eta = Susceptibility(N1,R1,beta,par)
+            if beta > 0:
+                chi_diag.append(chi[beta])
+            chi = list(chi)
+            del chi[beta]
+            chi_off = chi_off + chi
+        print(well+' done.')
+    
+    chi_diag = np.asarray(chi_diag)
+    chi_off = np.asarray(chi_off)
+    
+    return chi_diag, chi_off
+
+def ConCap(N,c):
+    cap_vec = []
+    for well in N.keys():
+        N1 = N[well].values
+        cap_1 = c.T.dot(N1>0)
+        cap_vec = cap_vec + list(cap_1[1:])
+    
+    return np.asarray(cap_vec)
+
+def ConCap_Simpson(N,c):
+    cap_vec = []
+    for well in N.keys():
+        N1 = N[well].values
+        c_red = c[N1>0,:]
+        cap_1 = np.asarray([Simpson(c_red[:,k]) for k in range(np.shape(c)[1])])
+        cap_1[np.where(np.sum(c_red,axis=0)<2*np.mean(c.reshape(-1)))] = 0
+        cap_vec = cap_vec + list(cap_1[1:])
+    
+    return np.asarray(cap_vec)
+
