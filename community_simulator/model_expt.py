@@ -19,6 +19,8 @@ parser.add_argument("foldername", type=str)
 parser.add_argument("fs", type=float)
 parser.add_argument("fw", type=float)
 parser.add_argument("q", type=float)
+parser.add_argument("e", type=float)
+parser.add_argument("K", type=float)
 parser.add_argument("n_iter", type=int)
 parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
@@ -34,16 +36,17 @@ filenames = filenames +[folder+'/'+datanames[j]+'_'+str(datetime.datetime.now())
                         for j in [4,5]]
 trials = 10
 T=5
-MA = 7
-n_types = 3
+MA = 25
+n_types = 4
 M=MA*n_types
 
 for j in range(args.ind_trials):
     first_run = True
     
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':2,'SA':50,'Sgen':0,'S':20,
-                  'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types}
+        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':1,'SA':50,'Sgen':0,'S':20,
+                  'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types,'e':args.e,
+                  'K':args.K}
         if not first_run:
             kwargs.update({'params':params,'N0':N0.values})
 
