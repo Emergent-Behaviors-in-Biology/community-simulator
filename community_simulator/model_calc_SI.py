@@ -30,10 +30,10 @@ h = [0,0,0]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'_'+str(args.task_ID)+suff[j] for j in range(5)]
 
 #ITERATIONS, ETC.
-n_iter = 5000
+n_iter = 500
 trials = 10
 ns = 10
-T=0.01
+T=0.1
 
 #CHOOSE PARAMETERS
 Kvec = 10**np.linspace(1,3,ns)
@@ -44,7 +44,7 @@ kwargs ={'K':Kvec[0],
         'n_iter':n_iter,
         'T':T,
         'n_wells':trials,
-        'extra_time':True
+        'extra_time':False
         }
 #kwargs_list = [{},{'Ddiv':0.001},{'sample_kind':'Gaussian'},{'sige':0.03,'sigw':0.1}]
 kwargs_list = [{},{'sample_kind':'Gaussian'}]
