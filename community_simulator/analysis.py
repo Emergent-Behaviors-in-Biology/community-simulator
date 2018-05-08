@@ -55,38 +55,6 @@ def LoadData(folder,date,load_all=False,load_c=True,task_id=None):
     else:
         return N,R,params
 
-def ComputeIPR(df):
-    IPR = pd.DataFrame(columns=df.keys(),index=df.index.levels[0])
-    for j in df.index.levels[0]:
-        p = df.loc[j]/df.loc[j].sum()
-        IPR.loc[j] = 1./((p[p>0]**2).sum())
-    return IPR
-
-def PostProcess(folder,date,cutoff=0):
-    folder = FormatPath(folder)
-    N,R,c,params = LoadData(folder,date=date)
-    N_IPR = ComputeIPR(N)
-    R_IPR = ComputeIPR(R)
-    
-    ns = len(N_IPR)*len(N_IPR.keys())
-    
-    data = pd.DataFrame(index=list(range(ns)),columns=['Plate','Consumer IPR','Resource IPR']+list(params.keys()))
-    
-    j=0
-    
-    for plate in N_IPR.index:
-        for well in N_IPR.keys():
-            data.loc[j,'Plate'] = plate
-            data.loc[j,'Consumer IPR'] = N_IPR.loc[plate,well]
-            data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
-            for item in params.keys():
-                data.loc[j,item] = params.loc[plate,item]
-            data.loc[j,'Consumer Richness']=(N.loc[plate]>cutoff*(N.loc[plate].sum())).sum()[well]
-            data.loc[j,'Resource Richness']=(R.loc[plate]>cutoff*(R.loc[plate].sum())).sum()[well]
-            j+=1
-    data.to_excel(folder+'data_'+date+'.xlsx')
-    return data
-
 def FlatResult(N,R,params):
     types = R.index.levels[1]
     n_wells = len(N.keys())
@@ -158,20 +126,43 @@ def MakeFlux(response='type I',regulation='independent'):
          'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
         }
     
-    F_in = lambda R,params: (u[regulation](params['c']*R,params)
+    J_in = lambda R,params: (u[regulation](params['c']*R,params)
                              *params['w']*sigma[response](R,params))
     
-    return F_in
+    return J_in
 
 Jin = MakeFlux()
 
-def J_div(N,R,par,run):
-    Jd = []
+def CalculateConsumptionMeff(N,R,par):
+    M_eff = []
     for well in N.keys():
-        not_extinct = np.where(N.loc[run][well].values > 0)[0]
+        N1 = N[well].values
+        R1 = R[well].values
+        not_extinct = np.where(N1 > 0)[0]
         for species in not_extinct:
-            Jd.append(Simpson(Jin(R.loc[run][well].values,par)[species,:]))
-    return Jd
+            M_eff.append(Simpson(Jin(R1,par)[species,:]))
+    return M_eff
+
+def CalculateConsumptionNeff(N,c,metric='Simpson',thresh=2):
+    cap_vec = []
+    if metric == 'Simpson':
+        for well in N.keys():
+            N1 = N[well].values
+            c_red = c[N1>0,:]
+            cap_1 = np.asarray([Simpson(c_red[:,k]) for k in range(np.shape(c)[1])])
+            cap_1[np.where(np.sum(c_red,axis=0)<thresh*np.mean(c.reshape(-1)))] = 0
+            cap_vec = cap_vec + list(cap_1[1:])
+
+    else:
+        c_norm = c-np.min(c.reshape(-1))
+        c_norm = c_norm/np.max(c_norm.reshape(-1))
+        for well in N.keys():
+            N1 = N[well].values
+            cap_1 = c_norm.T.dot(N1>0)
+            cap_vec = cap_vec + list(cap_1[1:])
+
+    
+    return np.asarray(cap_vec)
 
 def Susceptibility(N1,R1,beta,par):
     R1 = np.asarray(R1,dtype=float)
@@ -199,7 +190,7 @@ def Susceptibility(N1,R1,beta,par):
     
     return chi, eta
 
-def AllChi(N,R,par):
+def CalculateSusceptibility(N,R,par,print_progress=False):
     chi_diag = []
     chi_off = []
     for well in N.keys():
@@ -212,30 +203,13 @@ def AllChi(N,R,par):
             chi = list(chi)
             del chi[beta]
             chi_off = chi_off + chi
-        print(well+' done.')
+        if print_progress:
+            print(well+' done.')
     
     chi_diag = np.asarray(chi_diag)
     chi_off = np.asarray(chi_off)
     
     return chi_diag, chi_off
 
-def ConCap(N,c):
-    cap_vec = []
-    for well in N.keys():
-        N1 = N[well].values
-        cap_1 = c.T.dot(N1>0)
-        cap_vec = cap_vec + list(cap_1[1:])
-    
-    return np.asarray(cap_vec)
 
-def ConCap_Simpson(N,c):
-    cap_vec = []
-    for well in N.keys():
-        N1 = N[well].values
-        c_red = c[N1>0,:]
-        cap_1 = np.asarray([Simpson(c_red[:,k]) for k in range(np.shape(c)[1])])
-        cap_1[np.where(np.sum(c_red,axis=0)<2*np.mean(c.reshape(-1)))] = 0
-        cap_vec = cap_vec + list(cap_1[1:])
-    
-    return np.asarray(cap_vec)
 
