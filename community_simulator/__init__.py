@@ -47,11 +47,15 @@ class Community:
         #SAVE INITIAL STATE
         N, R = init_state
         if not isinstance(N, pd.DataFrame):#add labels to consumer state
+            if len(np.shape(N)) == 1:
+                N = N[:,np.newaxis]
             column_names = ['W'+str(k) for k in range(np.shape(N)[1])]
             species_names = ['S'+str(k) for k in range(np.shape(N)[0])]
-            N = pd.DataFrame(self.N,columns=column_names)
+            N = pd.DataFrame(N,columns=column_names)
             N.index = species_names
         if not isinstance(R, pd.DataFrame):#add labels to resource state
+            if len(np.shape(R)) == 1:
+                R = R[:,np.newaxis]
             resource_names = ['R'+str(k) for k in range(np.shape(R)[0])]
             R = pd.DataFrame(R,columns=N.keys())
             R.index = resource_names
@@ -139,6 +143,9 @@ class Community:
         pool = Pool()
         y_out = np.asarray(pool.map(IntegrateTheseWells,y_in)).squeeze().T
         pool.close()
+
+        if len(np.shape(y_out)) == 1:
+            y_out = y_out[:,np.newaxis]
         
         #UPDATE STATE VARIABLES WITH RESULTS OF INTEGRATION
         self.N = pd.DataFrame(y_out[:self.S,:],
