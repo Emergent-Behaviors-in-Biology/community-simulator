@@ -143,7 +143,7 @@ def ReduceDimension(N,R,c,plate=0,clusters=2,perplexity=5,plot_clusters=False,pl
        
     return y, [N_PCA, N_TSNE, R_PCA, R_TSNE, M_PCA, M_TSNE], [fig_OTU, axs_OTU, fig_fam, axs_fam]
 
-def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None):
+def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None,palette=None):
     if ax is None:
         fig,ax=plt.subplots(figsize=(4,4))
         fig.subplots_adjust(bottom=0.2,left=0.2)
@@ -157,7 +157,10 @@ def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None):
     rmin = np.min(richness)
     rmax = np.max(richness)
     n_colors = (rmax-rmin)+1
-    colors = sns.color_palette("Blues_d",n_colors)
+    if palette is None:
+        colors = sns.color_palette("Blues_d",n_colors)
+    else:
+        colors = sns.color_palette(palette,n_colors)
     
     for item in data.keys():
         ra = data[item].sort_values(ascending=False).values

@@ -167,16 +167,16 @@ def CalculateConsumptionNeff(N,c,metric='Simpson',thresh=2):
 def Susceptibility(N1,R1,beta,par):
     R1 = np.asarray(R1,dtype=float)
     N1 = np.asarray(N1,dtype=float)
-    M = len(par['D'])
+    M = len(par['D'].values)
     l = 1 - par['e']
     not_extinct = np.where(N1 > 0)[0]
 
-    c = par['c'][not_extinct,:]
+    c = par['c'].values[not_extinct,:]
     Sphi = len(not_extinct)
     N1 = N1[not_extinct]
 
-    A1 = (par['D']*l-np.eye(M))*(c.T.dot(N1))-np.eye(M)/par['tau']
-    A2 = (par['D']*l-np.eye(M)).dot((c*R1).T)
+    A1 = (par['D'].values*l-np.eye(M))*(c.T.dot(N1))-np.eye(M)/par['tau']
+    A2 = (par['D'].values*l-np.eye(M)).dot((c*R1).T)
     A3 = np.hstack(((1-l)*c,np.zeros((Sphi,Sphi))))
     A = np.vstack((np.hstack((A1,A2)),A3))
     b = np.zeros(M+Sphi)
