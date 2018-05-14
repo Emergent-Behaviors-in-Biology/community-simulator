@@ -112,6 +112,30 @@ def CalculateDiversity(df,metadata):
             metadata_new.loc[item,function]=metrics[function](df.loc[item].values)
     return metadata_new
 
+def PostProcess(folder,date,cutoff=0):
+    folder = FormatPath(folder)
+    N,R,c,params = LoadData(folder,date=date)
+    N_IPR = ComputeIPR(N)
+    R_IPR = ComputeIPR(R)
+    
+    ns = len(N_IPR)*len(N_IPR.keys())
+    
+    data = pd.DataFrame(index=list(range(ns)),columns=['Plate','Consumer IPR','Resource IPR']+list(params.keys()))
+    
+    j=0
+    
+    for plate in N_IPR.index:
+        for well in N_IPR.keys():
+            data.loc[j,'Plate'] = plate
+            data.loc[j,'Consumer IPR'] = N_IPR.loc[plate,well]
+            data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
+            for item in params.keys():
+                data.loc[j,item] = params.loc[plate,item]
+            data.loc[j,'Consumer Richness']=(N.loc[plate]>cutoff*(N.loc[plate].sum())).sum()[well]
+            data.loc[j,'Resource Richness']=(R.loc[plate]>cutoff*(R.loc[plate].sum())).sum()[well]
+            j+=1
+    data.to_excel(folder+'data_'+date+'.xlsx')
+    return data
 
 def MakeFlux(response='type I',regulation='independent'):
 
