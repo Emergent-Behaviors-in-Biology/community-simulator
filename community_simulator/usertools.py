@@ -91,8 +91,30 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
             p = params['muc']/(M*params['c1'])
             c.loc['GEN'] = c.loc['GEN'].values + params['c1']*BinaryRandomMatrix(params['Sgen'],M,p)
     
+    elif kind == 'Gamma':
+        #Initialize empty dataframe
+        c = pd.DataFrame(np.zeros((S,M)),columns=resource_index,index=consumer_index)
+    
+        #Add Gamma-sampled values, biasing consumption of each family towards its preferred resource
+        for k in range(F):
+            for j in range(T):
+                if k==j:
+                    c_mean = (params['muc']/M)*(1+params['q']*(M-params['MA'][j])/params['MA'][j])
+                    thetac = params['sigc']**2*1./c_mean
+                    kc = c_mean**2*1./(params['sigc']**2)
+                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(params['SA'][k],params['MA'][j]))
+                else:
+                    c_mean = (params['muc']/M)*(1-params['q'])
+                    thetac = params['sigc']**2*1./c_mean
+                    kc = c_mean**2*1./(params['sigc']**2)
+                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(params['SA'][k],params['MA'][j]))
+        if 'GEN' in c.index:
+            c_mean = params['muc']/M
+            thetac = params['sigc']**2*1./c_mean
+            kc = c_mean**2*1./(params['sigc']**2)
+            c.loc['GEN'] = np.random.gamma(kc,scale=thetac,size=(params['Sgen'],M))
     else:
-        print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
+        print('Invalid distribution choice. Valid choices are kind=Gaussian, kind=Binary and kind=Gamma.')
         return 'Error'
         
     #Make crossfeeding matrix

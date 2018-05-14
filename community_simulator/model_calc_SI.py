@@ -46,8 +46,7 @@ kwargs ={'K':Kvec[0],
         'n_wells':trials,
         'extra_time':False
         }
-#kwargs_list = [{},{'Ddiv':0.001},{'sample_kind':'Gaussian'},{'sige':0.03,'sigw':0.1}]
-kwargs_list = [{},{'sample_kind':'Gaussian'}]
+kwargs_list = [{},{'Ddiv':0.001},{'sample_kind':'Gaussian'},{'sample_kind':'Gamma'},{'sige':0.03,'sigw':0.1}]
 kwargs.update(kwargs_list[args.task_ID - 1])
 
 #LOOP THROUGH PARAMETERS
