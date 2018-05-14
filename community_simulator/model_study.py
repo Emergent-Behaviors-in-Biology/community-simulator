@@ -28,7 +28,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     Sgen = int(round(Sgen))
     S=int(round(S))
 
-    if sample_kind = 'Gaussian':
+    if sample_kind == 'Gaussian':
         p = muc/(MA*n_types*c1)
         sigc = np.sqrt(c1**2 * p * (1-p))
         muc = muc + MA*n_types*c0
