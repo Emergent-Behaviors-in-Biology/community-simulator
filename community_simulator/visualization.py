@@ -15,6 +15,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.cluster import k_means
 from matplotlib.backends import backend_pdf as bpdf
+from .analysis import metrics
 
 def NonzeroColumns(data,thresh=0):
     return data.keys()[np.where(np.sum(data)>thresh)]
@@ -251,3 +252,26 @@ def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False
     pdf.close()
 
     plt.show()
+
+def PlotDiversity(metadata,variable,value,groupby,ax=None,log=False,metric_choice=metrics.keys(),
+                 linestyles=5*['-','--','-.'],colors=None,legend=False,lw=2):
+    means = {}
+    err = {}
+    temp = metadata.loc[metadata[variable]==value]
+    for item in metric_choice:
+        means[item] = temp[[groupby,item]].groupby(groupby).mean()
+        err[item] = temp[[groupby,item]].groupby(groupby).std()
+    if ax==None:
+        fig,ax=plt.subplots()
+        
+    k = 0
+    for item in means:
+        means_plot = means[item].copy().T
+        
+        if colors == None:
+            means_plot.T.plot(yerr=err,ax=ax,logx=log,linestyle=linestyles[k],legend=legend,linewidth=lw)
+        else:
+            means_plot.T.plot(yerr=err,ax=ax,logx=log,linestyle=linestyles[k],color=colors[k],legend=legend,linewidth=lw)
+        k+=1
+        
+    return ax, means
