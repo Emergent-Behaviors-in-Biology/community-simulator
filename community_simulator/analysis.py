@@ -139,9 +139,9 @@ def PostProcess(folder,date,cutoff=0):
 
 def MakeFlux(response='type I',regulation='independent'):
 
-    sigma = {'type I': lambda R,params: params['c']*R,
-             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
-             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
+    sigma = {'type I': lambda R,params: params['c'].values*R,
+             'type II': lambda R,params: params['c'].values*R/(1+params['c'].values*R/params['K']),
+             'type III': lambda R,params: params['c'].values*(R**params['n'])/(1+params['c'].values*(R**params['n'])/params['K'])
             }
     
     u = {'independent': lambda x,params: 1.,
