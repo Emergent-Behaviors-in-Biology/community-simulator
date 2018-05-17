@@ -20,7 +20,7 @@ dynamics = [dNdt,dRdt]
 
 def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
                  c0=0.01,muc=10,MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
-                 params=None,N0=None,extra_time=False,sample_kind='Binary',
+                 params=None,N0=None,R0=None,extra_time=False,sample_kind='Binary',
                  sigm=0.1,sigw=0,sige=0):
     
     MA = int(round(MA))
@@ -50,8 +50,9 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
 
     #Create resource vector and set food supply
     M = int(np.sum(sample_par['MA']))
-    R0 = np.zeros((M,n_wells))
-    R0[food_type,:] = K
+    if R0 is None:
+        R0 = np.zeros((M,n_wells))
+        R0[food_type,:] = K
 
     #Create initial conditions (sub-sampling from regional species pool)
     S_tot = int(np.sum(sample_par['SA']))+sample_par['Sgen']
@@ -78,9 +79,13 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     else:
         params['e'] = e
         
+    params['R0']=np.zeros(M)
+    params['R0'][food_type] = K
+        
     N0,R0 = usertools.AddLabels(N0,R0,params['c'])
     init_state = [N0,R0]
-    params['R0']=R0.values[:,0]
+    
+
     MyPlate = Community(init_state,dynamics,params)
     
     try:
