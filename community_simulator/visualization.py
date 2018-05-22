@@ -144,14 +144,15 @@ def ReduceDimension(N,R,c,plate=0,clusters=2,perplexity=5,plot_clusters=False,pl
        
     return y, [N_PCA, N_TSNE, R_PCA, R_TSNE, M_PCA, M_TSNE], [fig_OTU, axs_OTU, fig_fam, axs_fam]
 
-def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None,palette=None):
+def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None,palette=None,normalize=True):
     if ax is None:
         fig,ax=plt.subplots(figsize=(4,4))
         fig.subplots_adjust(bottom=0.2,left=0.2)
     data = df.copy()
     for item in params:
         data = data.loc[metadata[item]==params[item]]
-    data = data.T/data.T.sum()
+    if normalize:
+        data = data.T/data.T.sum()
     data[data<thresh]=0
     
     richness = (data>0).sum()
@@ -168,7 +169,10 @@ def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None,palett
         ra = ra[ra>0]
         ax.semilogy(ra,'o-',color=colors[len(ra)-rmin])
     ax.set_xlabel('Rank',fontsize=fs)
-    ax.set_ylabel('Relative Abundance',fontsize=fs)
+    if normalize:
+        ax.set_ylabel('Relative Abundance',fontsize=fs)
+    else:
+        ax.set_ylabel('Absolute Abundance',fontsize=fs)
     if title is not None:
         ax.set_title(title,fontsize=fs+4)
 
