@@ -157,11 +157,8 @@ def MakeFlux(response='type I',regulation='independent'):
 
 Jin = MakeFlux()
 
-def CalculateConsumptionMeff(N,R,par_in):
+def CalculateConsumptionMeff(N,R,par):
     M_eff = []
-    par = par_in.copy()
-    par['c'] = par['c'].values
-    par['D'] = par['D'].values
     for well in N.keys():
         N1 = N[well].values
         R1 = R[well].values
