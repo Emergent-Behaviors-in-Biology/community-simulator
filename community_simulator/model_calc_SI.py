@@ -30,7 +30,7 @@ h = [0,0,0]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'_'+str(args.task_ID)+suff[j] for j in range(5)]
 
 #ITERATIONS, ETC.
-n_iter = 500
+n_iter = 1000
 trials = 10
 ns = 10
 T=0.1
