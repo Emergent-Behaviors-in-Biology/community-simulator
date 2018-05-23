@@ -153,6 +153,8 @@ def RankAbundance(df,metadata,params,thresh=1e-6,title=None,fs=18,ax=None,palett
         data = data.loc[metadata[item]==params[item]]
     if normalize:
         data = data.T/data.T.sum()
+    else:
+        data = data.T
     data[data<thresh]=0
     
     richness = (data>0).sum()
