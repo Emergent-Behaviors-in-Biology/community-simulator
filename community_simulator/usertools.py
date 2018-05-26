@@ -44,7 +44,7 @@ def MakeMatrices(metaparams = metaparams_default, kind='Gaussian'):
         'D_diversity' = variability in secretion fluxes among resources (from 0 to 1)
         'wate_type' = index of resource type to designate as "waste"
         
-    kind = {'Gaussian','Binary'} specifies choice of sampling algorithm
+    kind = {'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
     
     Returns:
     c = consumer matrix
@@ -110,6 +110,28 @@ def MakeMatrices(metaparams = metaparams_default, kind='Gaussian'):
         if 'GEN' in c.index:
             p = metaparams['muc']/(M*metaparams['c1'])
             c.loc['GEN'] = c.loc['GEN'].values + metaparams['c1']*BinaryRandomMatrix(metaparams['Sgen'],M,p)
+    elif kind == 'Gamma':
+        #Initialize empty dataframe
+        c = pd.DataFrame(np.zeros((S,M)),columns=resource_index,index=consumer_index)
+
+        #Add Gamma-sampled values, biasing consumption of each family towards its preferred resource
+        for k in range(F):
+            for j in range(T):
+                if k==j:
+                    c_mean = (metaparams['muc']/M)*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
+                    thetac = metaparams['sigc']**2*1./c_mean
+                    kc = c_mean**2*1./(metaparams['sigc']**2)
+                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(metaparams['SA'][k],metaparams['MA'][j]))
+                else:
+                    c_mean = (metaparams['muc']/M)*(1-metaparams['q'])
+                    thetac = metaparams['sigc']**2*1./c_mean
+                    kc = c_mean**2*1./(metaparams['sigc']**2)
+                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(metaparams['SA'][k],metaparams['MA'][j]))
+        if 'GEN' in c.index:
+            c_mean = metaparams['muc']/M
+            thetac = metaparams['sigc']**2*1./c_mean
+            kc = c_mean**2*1./(metaparams['sigc']**2)
+            c.loc['GEN'] = np.random.gamma(kc,scale=thetac,size=(metaparams['Sgen'],M))
     
     else:
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
