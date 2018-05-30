@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pexpect
 import os
+import pickle
 
 username = 'marsland'
 hostname = 'scc1.bu.edu'
@@ -54,6 +55,30 @@ def LoadData(folder,date,load_all=False,load_c=True,task_id=None):
         return N,R,c,params,full_params
     else:
         return N,R,params
+
+def LoadExperiment(name, file_list):
+    date = file_list.loc[name]['Date']
+    task_id = file_list.loc[name]['Task_ID']
+
+    if type(task_id) == float:
+        task_id_1 = ''
+        task_id_2 = None
+    else:
+        task_id_1 = '_'+str(task_id)
+        task_id_2 = task_id
+        
+    folder = file_list.loc[name]['Folder']
+    filename = folder + '/Realization_'+date+task_id_1+'.dat'
+    with open(filename,'rb') as f:
+        par = pickle.load(f)
+    N,R,params=LoadData(folder,date,task_id=task_id_2,load_c=False)
+    Nflat, Rflat, metadata = FlatResult(N,R,params)
+    metadata['K'] = np.round(metadata['K'])
+    metadata['Leakage'] = 1-np.round(metadata['e'],decimals=1)
+    params['K'] = np.asarray(round(params['K']).values,dtype=int)
+    params['Leakage'] = np.round(1-params['e'],decimals=1)
+    
+    return {name: {'N':N,'R':R,'params':params,'Nflat':Nflat,'Rflat':Rflat,'metadata':metadata,'sim_params':par}}
 
 def FlatResult(N,R,params):
     types = R.index.levels[1]
