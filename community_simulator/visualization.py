@@ -208,7 +208,7 @@ def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,
 
     return ax
 
-def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False,thresh=1e-6,title='test'):
+def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False,thresh=1e-6,title='test',folder='../Plots/'):
     if drop_zero:
         data = data.loc[(data.T>thresh).any()]
     def_colors = sns.color_palette("RdBu_r",len(data))
@@ -253,7 +253,7 @@ def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False
         ax.set_title(title,fontsize=18)
 
 
-    pdf = bpdf.PdfPages('../Plots/PCA_'+title+'.pdf')
+    pdf = bpdf.PdfPages(folder+'PCA_'+title+'.pdf')
     pdf.savefig(fig)
     pdf.close()
 
