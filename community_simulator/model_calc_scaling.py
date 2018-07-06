@@ -66,8 +66,7 @@ for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
     #FOR SUBSEQUENT RUNS, KEEP OLD MATRICES AND INITIAL CONDITIONS
     if not first_run:
-        kwargs['run_number'] = j*len(evec)+m
-        kwargs['e'] = evec[m]
+        kwargs['run_number'] = j
         kwargs['K'] = Kvec[j]
         
     #RUN COMMUNITY
