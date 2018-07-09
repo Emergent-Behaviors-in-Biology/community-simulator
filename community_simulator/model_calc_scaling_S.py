@@ -37,7 +37,7 @@ T=5
 #CHOOSE PARAMETERS
 SAvec = [60,80,100,120]
 n_types = 4
-SA = SAvec[args.task_ID-1]
+SA = SAvec[args.task_ID-5]
 Sgen = SA
 Stot = SA*n_types+Sgen
 S = Stot/2
