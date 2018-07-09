@@ -21,7 +21,7 @@ dynamics = [dNdt,dRdt]
 def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
                  c0=0.01,muc=10,MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
                  params=None,N0=None,R0=None,extra_time=False,sample_kind='Binary',
-                 sigm=0.1,sigw=0,sige=0):
+                 sigm=0.1,sigw=0,sige=0,scale=1e6):
     
     MA = int(round(MA))
     SA = int(round(SA))
@@ -89,11 +89,11 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     MyPlate = Community(init_state,dynamics,params)
     
     try:
-        Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=1e6)
+        Ntraj,Rtraj = MyPlate.RunExperiment(np.eye(n_wells),T,n_iter,refresh_resource=False,scale=scale)
         if extra_time:
-            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=1e6)
-            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=1e6)
-        MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=1e6)
+            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),100,10,refresh_resource=False,scale=scale)
+            Ntraj2,Rtraj2 = MyPlate.RunExperiment(np.eye(n_wells),1000,10,refresh_resource=False,scale=scale)
+        MyPlate.Passage(np.eye(n_wells),refresh_resource=False,scale=scale)
     except:
         Ntraj = np.nan
         Rtraj = np.nan

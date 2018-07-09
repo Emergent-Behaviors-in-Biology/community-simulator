@@ -35,15 +35,14 @@ ns = 10
 T=5
 
 #CHOOSE PARAMETERS
-MAvec = [50,75,100,125]
+SAvec = [60,80,100,120]
 n_types = 4
-MA = MAvec[args.task_ID-1]
-M = MA*n_types
-S = M
-Stot = S*2
-SA = Stot/(n_types+1)
+SA = SAvec[args.task_ID-1]
 Sgen = SA
-Kvec = (10**np.linspace(1,3,ns))*M/100
+Stot = SA*n_types+Sgen
+S = Stot/2
+
+Kvec = (10**np.linspace(1,3,ns))
 
 kwargs ={'K':Kvec[0],
         'e':0.1,
@@ -54,7 +53,6 @@ kwargs ={'K':Kvec[0],
         'extra_time':True,
         'n_types':n_types,
         'SA':SA,
-        'MA':MA,
         'S':S,
         'Sgen':Sgen,
         'scale':1e9
