@@ -30,7 +30,7 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 
 #ITERATIONS, ETC.
 n_iter = 100
-trials = 10
+trials = 100
 ns = 10
 T=5
 
@@ -40,10 +40,11 @@ n_types = 4
 MA = MAvec[args.task_ID-1]
 M = MA*n_types
 S = M
-Stot = S*2
+Stot = S*5
 SA = Stot/(n_types+1)
 Sgen = SA
-Kvec = (10**np.linspace(1,3,ns))*M/100
+Kvec = np.linspace(1.5,2.5,ns)*M
+#Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
         'e':0.1,
