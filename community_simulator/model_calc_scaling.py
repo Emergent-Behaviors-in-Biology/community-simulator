@@ -43,7 +43,7 @@ S = M
 Stot = S*5
 SA = Stot/(n_types+1)
 Sgen = SA
-Kvec = np.linspace(1,2,ns)*M
+Kvec = np.linspace(0.5,2.5,ns)*M
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
