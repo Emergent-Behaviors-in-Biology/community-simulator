@@ -7,7 +7,7 @@ Created on Tue Dec 19 17:23:10 2017
 """
 
 import argparse
-from community_simulator.model_study import RunCommunity
+from community_simulator.model_study_replica import RunCommunity
 import numpy as np
 import distutils.dir_util
 import pandas as pd
@@ -29,8 +29,8 @@ valid_params=['K' ,'q', 'e', 'fs', 'fw', 'food_type', 'Ddiv', 'n_types', 'c1','c
 assert args.param in valid_params, 'Invalid choice of variable parameter.'
 assert args.extra_param in valid_params+['None'], 'Invalid choice of extra parameter.'
 
-#folder = 'test'
-folder = '/project/biophys/microbial_crm/'+args.param+'data/'+args.extra_param+str(args.extra_param_val)
+folder = 'test'
+#folder = '/project/biophys/microbial_crm/'+args.param+'data/'+args.extra_param+str(args.extra_param_val)
 distutils.dir_util.mkpath(folder)
 datanames = ['Consumers','Resources','Parameters','c_matrix','Realization']
 ic = [[0,1,2],[0,1,2],0,[0,1,2]]

@@ -18,10 +18,10 @@ def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(**assumptions)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types=4,c1=1,
-                 c0=0.01,muc=10,MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
-                 params=None,N0=None,R0=None,extra_time=False,sample_kind='Binary',
-                 sigm=0.1,sigw=0,sige=0,scale=1e6):
+def RunCommunity(K=100.,q=0.,e=1,fs=0.25,fw=0.25,Ddiv=0.2,n_types=4,c1=1,
+                 c0=0,muc=10,MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
+                 params=None,N0=None,R0=None,extra_time=True,sample_kind='Binary',
+                 sigm=0.1,sigw=0,sige=0,scale=1e9):
     
     MA = int(round(MA))
     SA = int(round(SA))
@@ -51,8 +51,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     #Create resource vector and set food supply
     M = int(np.sum(sample_par['MA']))
     if R0 is None:
-        R0 = np.zeros((M,n_wells))
-        R0[food_type,:] = K
+        R0 = np.ones((M,n_wells))*K
 
     #Create initial conditions (sub-sampling from regional species pool)
     S_tot = int(np.sum(sample_par['SA']))+sample_par['Sgen']
@@ -79,8 +78,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
     else:
         params['e'] = e
         
-    params['R0']=np.zeros(M)
-    params['R0'][food_type] = K
+    params['R0']=np.ones(M)*K
         
     N0,R0 = usertools.AddLabels(N0,R0,params['c'])
     init_state = [N0,R0]
@@ -110,8 +108,8 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,Ddiv=0.2,n_types
         final_state[j] = final_state[j].reorder_levels(['Run Number',0,1])
         final_state[j].index.names=[None,None,None]
     
-    params_in = pd.DataFrame([K,q,e,muc,sigc,c1,c0,fs,fw,Ddiv,M,S,food_type,richness,sigm,sigw,sige,sample_kind],columns=[run_number],
-                             index=['K','q','e','muc','sig_c','c1','c0','fs','fw','Ddiv','M','S','Food','Rich','sig_m','sig_w','sig_e','c_sampling']).T
+    params_in = pd.DataFrame([K,q,e,muc,sigc,c1,c0,fs,fw,Ddiv,M,S,richness,sigm,sigw,sige,sample_kind],columns=[run_number],
+                             index=['K','q','e','muc','sig_c','c1','c0','fs','fw','Ddiv','M','S','Rich','sig_m','sig_w','sig_e','c_sampling']).T
 
     c_matrix = pd.DataFrame(params['c'].copy(),columns=MyPlate.R.index,index=MyPlate.N.index)
     c_matrix['Run Number']=run_number
