@@ -35,7 +35,7 @@ ns = 20
 T=5
 
 #CHOOSE PARAMETERS
-MAvec = [50,75,100,125]
+MAvec = [10,20,30,40,50,60,70,80,90,100,110,120,130,200]
 n_types = 4
 MA = MAvec[args.task_ID-1]
 M = MA*n_types
