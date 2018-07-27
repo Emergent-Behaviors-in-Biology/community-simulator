@@ -31,7 +31,7 @@ filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]
 #ITERATIONS, ETC.
 n_iter = 100
 trials = 100
-ns = 20
+#ns = 20
 T=5
 
 #CHOOSE PARAMETERS
@@ -43,11 +43,13 @@ S = M
 Stot = S*5
 SA = Stot/(n_types+1)
 Sgen = SA
-Kvec = np.linspace(0.5,2.5,ns)*M
+
+Kvec = np.asarray([0.28,10,10])*M
+evec = np.asarray([0.1,0.1,0.9])*M
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
-        'e':0.1,
+        'e':evec[0],
         'run_number':0,
         'n_iter':n_iter,
         'T':T,
@@ -66,10 +68,12 @@ first_run = True
     
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
+    print('l='+str(1-evec[j]))
     #FOR SUBSEQUENT RUNS, KEEP OLD MATRICES AND INITIAL CONDITIONS
     if not first_run:
         kwargs['run_number'] = j
         kwargs['K'] = Kvec[j]
+        kwargs['e'] = evec[j]
         
     #RUN COMMUNITY
     out = RunCommunity(**kwargs)
