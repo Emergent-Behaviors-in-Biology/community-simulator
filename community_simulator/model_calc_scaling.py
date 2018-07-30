@@ -44,8 +44,10 @@ Stot = S*5
 SA = Stot/(n_types+1)
 Sgen = SA
 
-Kvec = np.asarray([0.28,10,10])*M
-evec = np.asarray([0.1,0.1,0.9])
+Kvec = np.asarray([0.1,0.1])*M
+evec = np.asarray([0.1,0.1])
+#Kvec = np.asarray([0.28,10,10])*M
+#evec = np.asarray([0.1,0.1,0.9])
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
