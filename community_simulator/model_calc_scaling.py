@@ -27,7 +27,6 @@ suff = ['.xlsx']*4+['.dat']
 ic = [[0,1,2],[0,1,2],0]
 h = [0,0,0]
 date = str(datetime.datetime.now()).split()[0]
-date = '2018-07-31'
 filenames = [folder+'/'+datanames[j]+'_'+date+'_'+str(args.task_ID)+suff[j] for j in range(5)]
 
 #ITERATIONS, ETC.
@@ -46,8 +45,8 @@ Stot = S*5
 SA = Stot/(n_types+1)
 Sgen = SA
 
-Kvec = np.asarray([0.1,0.1])*M
-evec = np.asarray([0.1,0.1])
+Kvec = np.ones(10)*10*M
+evec = np.linspace(0.1,1,10)
 #Kvec = np.asarray([0.28,10,10])*M
 #evec = np.asarray([0.1,0.1,0.9])
 #Kvec = (10**np.linspace(1,3,ns))*M/100
