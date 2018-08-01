@@ -31,8 +31,8 @@ filenames = [folder+'/'+datanames[j]+'_'+date+'_'+str(args.task_ID)+suff[j] for 
 
 #ITERATIONS, ETC.
 n_iter = 100
-trials = 100
-#ns = 20
+trials = 10
+ind_trials = 10
 T=5
 
 #CHOOSE PARAMETERS
@@ -41,14 +41,14 @@ n_types = 4
 MA = MAvec[args.task_ID-1]
 M = MA*n_types
 S = M
-Stot = S*5
+Stot = S*2
 SA = Stot/(n_types+1)
 Sgen = SA
 
-Kvec = np.ones(10)*10*M
-evec = np.linspace(0.1,1,10)
-#Kvec = np.asarray([0.28,10,10])*M
-#evec = np.asarray([0.1,0.1,0.9])
+#Kvec = np.ones(10)*10*M
+#evec = np.linspace(0.1,1,10)
+Kvec = np.asarray([0.10,10,10])*M
+evec = np.asarray([0.1,0.1,0.9])
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
@@ -72,29 +72,23 @@ first_run = True
 for j in range(len(Kvec)):
     print('K='+str(Kvec[j]))
     print('l='+str(1-evec[j]))
-    #FOR SUBSEQUENT RUNS, KEEP OLD MATRICES AND INITIAL CONDITIONS
+    
     if not first_run:
         kwargs['run_number'] = j
         kwargs['K'] = Kvec[j]
         kwargs['e'] = evec[j]
+    
+    for k in range(ind_trials):
+
+        #RUN COMMUNITY
+        out = RunCommunity(**kwargs)
         
-    #RUN COMMUNITY
-    out = RunCommunity(**kwargs)
-        
-    #ON FIRST RUN, SAVE PARAMETERS AND INITIAL CONDITION
-    if first_run:
-        params = out[4]
-        with open(filenames[4],'wb') as f:
-            pickle.dump(params,f)
-        for q in range(3):
-            out[q].to_excel(filenames[q])
-        N0 = out[5].loc[0].T
-        N0.to_excel(filenames[3])
-        kwargs.update({'params':params,'N0':N0.values})
-    #ON SUBSEQUENT RUNS, APPEND NEW RESULTS TO FILES
-    else:
-        for q in range(3):
-            old = pd.read_excel(filenames[q],index_col=ic[q],header=h[q])
-            old.append(out[q]).to_excel(filenames[q])
-    del out
-    first_run = False
+        if first_run:
+            for q in range(3):
+                out[q].to_excel(filenames[q])
+        else:
+            for q in range(3):
+                old = pd.read_excel(filenames[q],index_col=ic[q],header=h[q])
+                old.append(out[q]).to_excel(filenames[q])
+        del out
+        first_run = False
