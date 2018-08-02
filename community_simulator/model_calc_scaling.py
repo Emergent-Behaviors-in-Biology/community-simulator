@@ -79,6 +79,8 @@ for j in range(len(Kvec)):
         kwargs['e'] = evec[j]
     
     for k in range(ind_trials):
+        
+        kwargs['run_number'] = j*ind_trials + k
 
         #RUN COMMUNITY
         out = RunCommunity(**kwargs)
