@@ -25,7 +25,7 @@ parser.add_argument("n_iter", type=int)
 parser.add_argument("ind_trials", type=int)
 args = parser.parse_args()
 
-valid_params=['K' ,'q', 'e', 'fs', 'fw', 'food_type', 'Ddiv', 'n_types', 'c1','c0', 'MA', 'SA', 'Sgen', 'S', 'n_wells','sigm']
+valid_params=['K' ,'q', 'e', 'fs', 'fw', 'food_type', 'Ddiv', 'n_types', 'c1','c0', 'MA', 'SA', 'Sgen', 'S', 'n_wells','sigm','muc']
 assert args.param in valid_params, 'Invalid choice of variable parameter.'
 assert args.extra_param in valid_params+['None'], 'Invalid choice of extra parameter.'
 
@@ -52,7 +52,7 @@ f = open(filenames[4],'wb')
 for j in range(args.ns):
     for k in range(args.ind_trials):
         print(args.param+'='+str(paramvec[j]))
-        kwargs = {args.param:paramvec[j],'run_number':j*args.ind_trials+k,'n_iter':args.n_iter,'T':T}
+        kwargs = {args.param:paramvec[j],'run_number':j*args.ind_trials+k,'n_iter':args.n_iter,'T':T,'extra_time':True}
         kwargs.update(extra_params)
         out = RunCommunity(**kwargs)
         pickle.dump([out[4]],f)

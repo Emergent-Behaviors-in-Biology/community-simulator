@@ -29,8 +29,8 @@ h = [0,0,0]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'_'+str(args.task_ID)+suff[j] for j in range(5)]
 
 #SYSTEM SIZE
-MA = 200
-SA = 300
+MA = 125
+SA = 200
 n_types = 4
 M = MA*n_types
 
