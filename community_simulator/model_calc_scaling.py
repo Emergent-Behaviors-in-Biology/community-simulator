@@ -36,7 +36,7 @@ ind_trials = 10
 T=5
 
 #CHOOSE PARAMETERS
-MAvec = [10,20,30,40,50,60,70,80,90,100,110,120,130,200]
+MAvec = [10,20,30,40,50,60,70,80,90,100,110,120,130,140]
 n_types = 4
 MA = MAvec[args.task_ID-1]
 M = MA*n_types
@@ -47,8 +47,8 @@ Sgen = SA
 
 #Kvec = np.ones(10)*10*M
 #evec = np.linspace(0.1,1,10)
-Kvec = np.asarray([0.10,10,10])*M
-evec = np.asarray([0.1,0.1,0.9])
+Kvec = np.asarray([0.28,0.17,10])*M
+evec = np.asarray([0.4,0.5,0.7])
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
