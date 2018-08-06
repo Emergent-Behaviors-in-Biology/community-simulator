@@ -47,8 +47,10 @@ Sgen = SA
 
 #Kvec = np.ones(10)*10*M
 #evec = np.linspace(0.1,1,10)
-Kvec = np.asarray([0.46,2.15,10.0])*M
-evec = np.asarray([0.5,0.5,0.5])
+#Kvec = np.asarray([0.46,2.15,10.0])*M
+#evec = np.asarray([0.5,0.5,0.5])
+Kvec = np.asarray([0.1,0.28,10.0,10.0])*M
+evec = np.asarray([0.1,0.4,0.9,0.1])
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
@@ -63,7 +65,8 @@ kwargs ={'K':Kvec[0],
         'MA':MA,
         'S':S,
         'Sgen':Sgen,
-        'scale':1e9
+        'scale':1e9,
+        'c0':0
         }
 
 #LOOP THROUGH PARAMETERS
