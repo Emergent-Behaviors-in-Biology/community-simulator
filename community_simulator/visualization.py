@@ -208,7 +208,7 @@ def Histogram(df,metadata,params,thresh=0,title=None,fs=18,ax=None,nbins=10,
 
     return ax
 
-def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False,thresh=1e-6,title='test',folder='../Plots/'):
+def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False,thresh=1e-6,title='test',folder='../Plots/',ax=None):
     if drop_zero:
         data = data.loc[(data.T>thresh).any()]
     def_colors = sns.color_palette("RdBu_r",len(data))
@@ -225,7 +225,7 @@ def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False
         names = np.array(list(zip(names,dominant)),dtype=[('well','S30'),('dominant',int)])
         names_sort = np.asarray(np.sort(names,order='dominant')['well'],dtype=str)
         f = data[names_sort]/data[names_sort].sum()
-
+        
         fig,axs=plt.subplots(2,figsize=(5,8))
         fig.subplots_adjust(hspace=0.3,left=0.2)
         axs[1].scatter(N_PCA[:,0],N_PCA[:,1],marker='.',color='gray')
@@ -246,18 +246,14 @@ def CompositionPlot(data,n_wells=10,PCA_examples=False,bars=True,drop_zero=False
         axs[0].set_xlabel('Community',fontsize=14)
 
     else:
-        fig,ax = plt.subplots()
+        if ax is None:
+            fig,ax = plt.subplots()
         ax.scatter(N_PCA[:,0],N_PCA[:,1],marker='.',color='black')
         ax.set_xlabel('PCA 1 ('+str(explained_variance[0])+' %)',fontsize=14)
         ax.set_ylabel('PCA 2 ('+str(explained_variance[1])+' %)',fontsize=14)
         ax.set_title(title,fontsize=18)
 
-
-    pdf = bpdf.PdfPages(folder+'PCA_'+title+'.pdf')
-    pdf.savefig(fig)
-    pdf.close()
-
-    plt.show()
+    return ax
 
 def PlotDiversity(metadata,variable,value,groupby,ax=None,log=False,metric_choice=metrics.keys(),
                  linestyles=5*['-','--','-.'],colors=None,legend=False,lw=2):
