@@ -47,8 +47,8 @@ Sgen = SA
 
 #Kvec = np.ones(10)*10*M
 #evec = np.linspace(0.1,1,10)
-Kvec = np.asarray([0.28,0.17,10])*M
-evec = np.asarray([0.4,0.5,0.7])
+Kvec = np.asarray([0.46,2.15,10.0])*M
+evec = np.asarray([0.5,0.5,0.5])
 #Kvec = (10**np.linspace(1,3,ns))*M/100
 
 kwargs ={'K':Kvec[0],
