@@ -275,9 +275,9 @@ def PlotDiversity(metadata,variable,value,groupby,ax=None,log=False,metric_choic
         means_plot = means[item].copy().T
         
         if colors == None:
-            means_plot.T.plot(yerr=err,ax=ax,logx=log,linestyle=linestyles[k],legend=legend,linewidth=lw)
+            means_plot.T.plot(yerr=err[item],ax=ax,logx=log,linestyle=linestyles[k],legend=legend,linewidth=lw)
         else:
-            means_plot.T.plot(yerr=err,ax=ax,logx=log,linestyle=linestyles[k],color=colors[k],legend=legend,linewidth=lw)
+            means_plot.T.plot(yerr=err[item],ax=ax,logx=log,linestyle=linestyles[k],color=colors[k],legend=legend,linewidth=lw)
         k+=1
         
     return ax, means
