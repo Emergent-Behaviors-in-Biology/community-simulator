@@ -66,7 +66,7 @@ kwargs ={'K':Kvec[0],
         'S':S,
         'Sgen':Sgen,
         'scale':1e9,
-        'c0':0
+        'c0':1./M
         }
 
 #LOOP THROUGH PARAMETERS
