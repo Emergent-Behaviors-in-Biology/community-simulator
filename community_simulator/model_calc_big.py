@@ -54,7 +54,8 @@ kwargs ={'K':Kvec[0],
         'SA':SA,
         'Sgen':SA,
         'n_types':n_types,
-        'scale':1e9
+        'scale':1e9,
+        'S':M
         }
 
 #LOOP THROUGH PARAMETERS
