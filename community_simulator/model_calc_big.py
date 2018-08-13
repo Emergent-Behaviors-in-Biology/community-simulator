@@ -55,19 +55,20 @@ kwargs ={'K':Kvec[0],
         'Sgen':SA,
         'n_types':n_types,
         'scale':1e9,
-        'S':M
+        'S':M,
+        'c0':1./M
         }
 
 #LOOP THROUGH PARAMETERS
 first_run = True
 for j in range(len(Kvec)):
-    print('K='+str(Kvec[j]))
+    print('K='+str(Kvec[-1-j]))
     for m in range(len(evec)):
         #FOR SUBSEQUENT RUNS, KEEP OLD MATRICES AND INITIAL CONDITIONS
         if not first_run:
             kwargs['run_number'] = j*len(evec)+m
             kwargs['e'] = evec[m]
-            kwargs['K'] = Kvec[j]
+            kwargs['K'] = Kvec[-1-j]
         
         #RUN COMMUNITY
         out = RunCommunity(**kwargs)
