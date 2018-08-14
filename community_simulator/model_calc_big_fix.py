@@ -37,7 +37,7 @@ ns = 10
 T=5
 
 #LOAD OLD FILES
-N0 = pd.read_excel(filenames[3],index_col=ic[3],header=h[3])
+N0 = pd.read_excel(filenames[3],index_col=[0,1],header=0)
 with open(filenames_old[4],'rb') as f:
     params = pickle.load(f)
 
