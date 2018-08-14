@@ -28,8 +28,7 @@ datanames = ['Consumers','Resources','Parameters','Initial_State','Realization']
 suff = ['.xlsx']*4+['.dat']
 ic = [[0,1,2],[0,1,2],0]
 h = [0,0,0]
-filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'_'+str(args.task_ID)+suff[j] for j in range(5)]
-filenames_old = [folder+'/'+datanames[j]+'_'+args.date+'_'+str(args.task_ID)+suff[j] for j in range(5)]
+filenames = [folder+'/'+datanames[j]+'_'+args.date+'_'+str(args.task_ID)+suff[j] for j in range(5)]
 
 #ITERATIONS, ETC.
 n_iter = 100
@@ -38,7 +37,7 @@ ns = 10
 T=5
 
 #LOAD OLD FILES
-N0 = pd.read_excel(filenames_old[3],index_col=ic[3],header=h[3])
+N0 = pd.read_excel(filenames[3],index_col=ic[3],header=h[3])
 with open(filenames_old[4],'rb') as f:
     params = pickle.load(f)
 
