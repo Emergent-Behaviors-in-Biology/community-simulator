@@ -43,7 +43,7 @@ T=5
 #CHOOSE PARAMETERS
 Kvec = (0.01*M)*(10**np.linspace(1,3,ns))
 evec = np.linspace(0.1,1,ns)
-kwargs ={'K':Kvec[0],
+kwargs ={'K':Kvec[-1],
         'e':evec[0],
         'run_number':0,
         'n_iter':n_iter,
