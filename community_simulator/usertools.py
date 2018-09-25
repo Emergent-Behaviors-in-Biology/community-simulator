@@ -191,7 +191,7 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
     """
     sigma = {'type I': lambda R,params: params['c']*R,
              'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
-             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
+             'type III': lambda R,params: (params['c']*R)**params['n']/(1+((params['c']*R)/params['K'])**params['n'])
             }
     
     u = {'independent': lambda x,params: 1.,
@@ -231,7 +231,7 @@ def MakeConsumerDynamics(response='type I',regulation='independent',replenishmen
     """
     sigma = {'type I': lambda R,params: params['c']*R,
              'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
-             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
+             'type III': lambda R,params: (params['c']*R)**params['n']/(1+((params['c']*R)/params['K'])**params['n'])
             }
     
     u = {'independent': lambda x,params: 1.,
