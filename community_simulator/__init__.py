@@ -78,6 +78,7 @@ class Community:
         if 'D' not in params:#supply dummy values for D and e if D is not specified
             self.params['D'] = np.ones((self.M,self.M))
             self.params['e'] = 1
+        self.params['S'] = self.S
         
         #SAVE SCALE
         self.scale = scale

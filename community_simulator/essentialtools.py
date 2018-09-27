@@ -21,7 +21,7 @@ def IntegrateWell(CommunityInstance,params,y0,T0=0,T=1,ns=2,return_all=False,log
         t = np.linspace(T0,T0+T,ns)
     
     #COMPRESS STATE AND PARAMETERS TO GET RID OF EXTINCT SPECIES
-    S = np.shape(params['c'])[0]
+    S = params['S']
     M = len(y0)-S
     not_extinct = y0>0
     S_comp = np.sum(not_extinct[:S]) #record the new point dividing species from resources
@@ -30,11 +30,16 @@ def IntegrateWell(CommunityInstance,params,y0,T0=0,T=1,ns=2,return_all=False,log
     not_extinct_idx = np.where(not_extinct)[0]
     y0_comp = y0[not_extinct]
     params_comp = params.copy()
-    params_comp['c']=params_comp['c'][not_extinct[:S],:]
-    params_comp['c']=params_comp['c'][:,not_extinct[S:]]
-    params_comp['D']=params_comp['D'][not_extinct[S:],:]
-    params_comp['D']=params_comp['D'][:,not_extinct[S:]]
-    for name in ['m','g','e']:
+    if 'c' in params_comp.keys():
+        params_comp['c']=params_comp['c'][not_extinct[:S],:]
+        params_comp['c']=params_comp['c'][:,not_extinct[S:]]
+    if 'D' in params_comp.keys():
+        params_comp['D']=params_comp['D'][not_extinct[S:],:]
+        params_comp['D']=params_comp['D'][:,not_extinct[S:]]
+    if 'alpha' in params_comp.keys():
+        params_comp['alpha']=params_comp['alpha'][not_extinct[:S],:]
+        params_comp['alpha']=params_comp['alpha'][:,not_extinct[:S]]
+    for name in ['m','g','e','K']:
         if name in params_comp.keys():
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==S, 'Invalid length for ' + name
