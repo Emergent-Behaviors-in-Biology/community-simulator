@@ -260,5 +260,19 @@ def CalculateSusceptibility(N,R,par,print_progress=False):
     
     return chi_diag, chi_off
 
-
+def LotkaVolterra(N1,R1,par):
+    M = len(par['D'])
+    par['e'] = np.ones(M)*par['e']
+    par['l'] = 1- par['e']
+    
+    c = par['c'].values
+    
+    A = -(1/par['tau'] + c.T.dot(N))*np.eye(M) + ((par['D']*((c*par['l']*par['w']).T.dot(N))).T/par['w']).T
+    Q = (c*R).T - ((par['D'].dot((c*R*par['w']*par['l']).T)).T/par['w']).T
+    dRdN = np.linalg.inv(A).dot(Q)
+    
+    alpha = -(c*par['w']*par['e']).dot(dRdN)
+    K = alpha.dot(N)
+    
+    return K, alpha
 
