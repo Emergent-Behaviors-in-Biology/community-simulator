@@ -260,6 +260,17 @@ def CalculateSusceptibility(N,R,par,print_progress=False):
     
     return chi_diag, chi_off
 
+def NODF(A):
+    m,n = np.shape(A)
+    Ac = np.ones((n,n))*A.sum(axis=0)
+    Ar = np.ones((m,m))*A.T.sum(axis=0)
+    Dr = Ar<Ar.T
+    Dc = Ac<Ac.T
+    B = ((A.T)/(A.T.sum(axis=0))).T
+    C = A/A.sum(axis=0)
+    
+    return 2*(np.trace(A.T.dot(Dr.dot(B)))+np.trace(A.dot(Dc.dot(C.T))))/(n*(n-1)+m*(m-1))
+
 def LotkaVolterra(N1,R1,par):
     M = len(par['D'])
     par['e'] = np.ones(M)*par['e']
