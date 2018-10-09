@@ -261,6 +261,11 @@ def CalculateSusceptibility(N,R,par,print_progress=False):
     return chi_diag, chi_off
 
 def NODF(A):
+    """
+        Compute the Nestdness metric based on Overlap and Decreasing Fill (NODF) as
+        defined in Almeida-Neto et al. (2008).
+    """
+    
     m,n = np.shape(A)
     Ac = np.ones((n,n))*A.sum(axis=0)
     Ar = np.ones((m,m))*A.T.sum(axis=0)
