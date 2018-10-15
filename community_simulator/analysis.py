@@ -276,7 +276,7 @@ def NODF(A):
     
     return 2*(np.trace(A.T.dot(Dr.dot(B)))+np.trace(A.dot(Dc.dot(C.T))))/(n*(n-1)+m*(m-1))
 
-def LotkaVolterra(N1,R1,par):
+def LotkaVolterra(N,R,par):
     M = len(par['D'])
     par['e'] = np.ones(M)*par['e']
     par['l'] = 1- par['e']
