@@ -121,14 +121,22 @@ def MakeMatrices(params = params_default, kind='Gaussian', waste_ind=0):
     DT = pd.DataFrame(np.zeros((M,M)),index=c.keys(),columns=c.keys())
     for type_name in type_names:
         MA = len(DT.loc[type_name])
-        #Set background secretion levels
-        p = pd.Series(np.ones(M)*(1-params['fs']-params['fw'])/(M-MA-M_waste),index = DT.keys())
-        #Set self-secretion level
-        p.loc[type_name] = params['fs']/MA
-        #Set waste secretion level
-        p.loc[waste_name] = params['fw']/M_waste
-        #Sample from dirichlet
-        DT.loc[type_name] = dirichlet(p/params['D_diversity'],size=MA)
+        if type_name is not waste_name:
+            #Set background secretion levels
+            p = pd.Series(np.ones(M)*(1-params['fs']-params['fw'])/(M-MA-M_waste),index = DT.keys())
+            #Set self-secretion level
+            p.loc[type_name] = params['fs']/MA
+            #Set waste secretion level
+            p.loc[waste_name] = params['fw']/M_waste
+            #Sample from dirichlet
+            DT.loc[type_name] = dirichlet(p/params['D_diversity'],size=MA)
+        else:
+            #Set background secretion levels
+            p = pd.Series(np.ones(M)*(1-params['fw'])/(M-MA),index = DT.keys())
+            #Set self-secretion level
+            p.loc[type_name] = params['fw']/MA
+            #Sample from dirichlet
+            DT.loc[type_name] = dirichlet(p/params['D_diversity'],size=MA)
         
     return c, DT.T
 
