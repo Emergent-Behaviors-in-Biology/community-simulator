@@ -39,12 +39,12 @@ def IntegrateWell(CommunityInstance,params,y0,T0=0,T=1,ns=2,return_all=False,log
     if 'alpha' in params_comp.keys():
         params_comp['alpha']=params_comp['alpha'][not_extinct[:S],:]
         params_comp['alpha']=params_comp['alpha'][:,not_extinct[:S]]
-    for name in ['m','g','e','K']:
+    for name in ['m','g','K']:
         if name in params_comp.keys():
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==S, 'Invalid length for ' + name
                 params_comp[name]=params_comp[name][not_extinct[:S]]
-    for name in ['w','r','tau']:
+    for name in ['e','w','r','tau']:
         if name in params_comp.keys():
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==M, 'Invalid length for ' + name
