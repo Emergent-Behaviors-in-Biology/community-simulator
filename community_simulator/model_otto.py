@@ -36,16 +36,17 @@ filenames = filenames +[folder+'/'+datanames[j]+'_'+str(datetime.datetime.now())
                         for j in [4,5]]
 trials = 10
 T=5
-MA = 100
+M_general = 100
+M_special = 10
 n_types = 2
 mix_frac_vec = np.linspace(0,1,args.n_steps)
 
 first_run = True
     
 for k in range(args.n_steps):
-    kwargs = {'food_type':0,'food_type_2':1,'mix_frac':mix_frac_vec[k],'run_number':k,'n_iter':args.n_iter,'T':T,'c1':1,'SA':50,'Sgen':0,'S':100,
-                'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types,'e':args.e,
-                'K':args.K,'extra_time':False}
+    kwargs = {'food_type':0,'food_type_2':M_special,'mix_frac':mix_frac_vec[k],'run_number':k,'n_iter':args.n_iter,
+              'T':T,'c1':1,'SA':50,'Sgen':0,'S':100,'n_wells':trials,'M_general':M_general,'M_special':M_special,
+              'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types,'e':args.e,'K':args.K,'extra_time':False}
     if not first_run:
         kwargs.update({'params':params,'N0':N0.values})
 

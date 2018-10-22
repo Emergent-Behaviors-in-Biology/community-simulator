@@ -19,11 +19,10 @@ def dRdt(N,R,params):
 dynamics = [dNdt,dRdt]
 
 def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,food_type_2=1,mix_frac=1,Ddiv=0.2,n_types=4,c1=1,
-                 c0=0.01,muc=10,MA=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
+                 c0=0.01,muc=10,M_general=25,M_special=25,SA=40,Sgen=40,S=100,n_iter=200,T=5,n_wells=27,run_number=0,
                  params=None,N0=None,R0=None,extra_time=False,sample_kind='Binary',
                  sigm=0.1,sigw=0,sige=0,scale=1e6):
     
-    MA = int(round(MA))
     SA = int(round(SA))
     Sgen = int(round(Sgen))
     S=int(round(S))
@@ -33,7 +32,7 @@ def RunCommunity(K=1000.,q=0.,e=0.4,fs=0.25,fw=0.25,food_type=0,food_type_2=1,mi
         return 'Error'
 
     sample_par = {'SA': SA*np.ones(n_types+1), #Number of species in each family
-          'MA': np.asarray(np.hstack((10*np.ones(n_types),[MA])),dtype=int), #Number of resources of each type
+          'MA': np.asarray(np.hstack((M_special*np.ones(n_types),[M_general])),dtype=int), #Number of resources of each type
           'Sgen': Sgen, #Number of generalist species
           'muc': muc, #Mean sum of consumption rates,
           'q': q, #Preference strength 
