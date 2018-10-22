@@ -36,15 +36,15 @@ filenames = filenames +[folder+'/'+datanames[j]+'_'+str(datetime.datetime.now())
                         for j in [4,5]]
 trials = 10
 T=5
-MA = 25
-n_types = 4
+MA = 20
+n_types = 3
 M=MA*n_types
 
 for j in range(args.ind_trials):
     first_run = True
     
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':1,'SA':50,'Sgen':0,'S':20,
+        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':1,'SA':50,'Sgen':50,'S':100,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types,'e':args.e,
                   'K':args.K,'extra_time':True}
         if not first_run:
