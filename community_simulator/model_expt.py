@@ -34,9 +34,9 @@ h = [0,0,0,[0,1]]
 filenames = [folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.xlsx' for j in range(4)]
 filenames = filenames +[folder+'/'+datanames[j]+'_'+str(datetime.datetime.now()).split()[0]+'.dat'
                         for j in [4,5]]
-trials = 10
+trials = 2
 T=5
-MA = 20
+MA = 30
 n_types = 3
 M=MA*n_types
 
@@ -44,7 +44,7 @@ for j in range(args.ind_trials):
     first_run = True
     
     for k in range(M):
-        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':1,'SA':50,'Sgen':50,'S':100,
+        kwargs = {'food_type':k,'run_number':j*M+k,'n_iter':args.n_iter,'T':T,'c1':1,'SA':250,'Sgen':250,'S':1000,
                   'n_wells':trials,'MA':MA,'q':args.q,'fw':args.fw,'fs':args.fs,'n_types':n_types,'e':args.e,
                   'K':args.K,'extra_time':True}
         if not first_run:
