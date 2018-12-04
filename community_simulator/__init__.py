@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import copy
 from multiprocessing import Pool
 from functools import partial
-from .essentialtools import IntegrateWell, TimeStamp
+from .essentialtools import IntegrateWell, OptimizeWell, TimeStamp
 
 class Community:
     def __init__(self,init_state,dynamics,params,scale=10**9):
@@ -75,9 +75,9 @@ class Community:
                 self.params[item]=self.params[item].values.squeeze()
             elif isinstance(self.params[item],list):
                 self.params[item]=np.asarray(self.params[item])
-        if 'D' not in params:#supply dummy values for D and e if D is not specified
+        if 'D' not in params:#supply dummy values for D and l if D is not specified
             self.params['D'] = np.ones((self.M,self.M))
-            self.params['e'] = 1
+            self.params['l'] = 0
         self.params['S'] = self.S
         
         #SAVE SCALE
@@ -122,6 +122,34 @@ class Community:
         """
         return np.hstack([self.dNdt(y[:S_comp],y[S_comp:],params),
                           self.dRdt(y[:S_comp],y[S_comp:],params)])
+    
+    def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10):
+        """
+        Find the steady state using convex optimization.
+        
+        replenishment = {external, self-renewing}
+        """
+        #CONSTRUCT FULL SYSTEM STATE
+        y_in = self.N.append(self.R).T.values
+        
+        #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
+        OptimizeTheseWells = partial(OptimizeWell,self.params,
+                                     replenishment=replenishment,
+                                     tol=tol,eps=eps,R0t_0=R0t_0)
+        
+        #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
+        pool = Pool()
+        y_out = np.asarray(list(map(OptimizeTheseWells,y_in))).squeeze().T
+        pool.close()
+        
+        if len(np.shape(y_out)) == 1:
+            y_out = y_out[:,np.newaxis]
+        
+        #UPDATE STATE VARIABLES WITH RESULTS OF INTEGRATION
+        self.N = pd.DataFrame(y_out[:self.S,:],
+                              index = self.N.index, columns = self.N.keys())
+        self.R = pd.DataFrame(y_out[self.S:,:],
+                              index = self.R.index, columns = self.R.keys())
             
     def Propagate(self,T,compress_resources=False):
         """
