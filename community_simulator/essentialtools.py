@@ -97,19 +97,21 @@ def OptimizeWell(params,y0,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
         assert replenishment == 'external', 'Replenishment must be external for crossfeeding dynamics.'
         
         #Make Q matrix and effective weight vector
-        Q = np.eye(M) - params_comp['l']*params_comp['D']
+        w_mat = np.kron(np.ones((M,1)),np.ones((1,M))*params_comp['w'])
+        Q = np.eye(M) - params_comp['l']*params_comp['D']*w_mat/(w_mat.T)
         Qinv = np.linalg.inv(Q)
         Qinv_aa = np.diag(Qinv)
-        w = Qinv_aa*(1-params_comp['l'])
+        w = Qinv_aa*(1-params_comp['l'])*params_comp['w']/params_comp['tau']
         Qinv = Qinv - np.diag(Qinv_aa)
         
         
         #Construct variables for optimizer
-        G = params_comp['c']*(1-params_comp['l'])/w #Divide by w, because we will multiply by wR
+        G = params_comp['c']*params_comp['w']*(1-params_comp['l'])/w #Divide by w, because we will multiply by wR
         h = np.ones((S,1))*params_comp['m']
 
         #Initialize effective resource concentrations
         R0t = R0t_0*np.ones(M)
+        
         #Set up the loop
         Rf = np.inf
         Rf_old = 0
@@ -124,12 +126,12 @@ def OptimizeWell(params,y0,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                 wR = cvx.Variable(shape=(M,1)) #weighted resources
         
                 #Need to multiply by w to get properly weighted KL divergence
-                Ks = np.asarray(R0t)*w 
-                wK = (Ks).reshape((M,1))
+                R0t[R0t<0] = 0.01
+                wR0 = (R0t*w).reshape((M,1))
 
                 #Solve
-                obj = cvx.Minimize(cvx.sum(cvx.kl_div(wK, wR)))
-                constraints = [G*wR <= h]
+                obj = cvx.Minimize(cvx.sum(cvx.kl_div(wR0, wR)))
+                constraints = [G*wR <= h, wR >= 0]
                 prob = cvx.Problem(obj, constraints)
                 prob.solver_stats
                 prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=200)
@@ -140,15 +142,14 @@ def OptimizeWell(params,y0,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                 Rf=wR.value.reshape(M)/w
 
                 #Update the effective resource concentrations
-                R0t = params['R0'] + (1/Qinv_aa)*Qinv.dot(params['R0']-Rf)
-                
+                R0t = params['R0'] + Qinv.dot((params['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
+
                 if verbose:
                     plt.plot(R0t)
                     plt.show()
                     print('Error: '+str(np.linalg.norm(Rf_old - Rf)))
                     print('---------------- '+str(time.time()-start_time)[:4]+' s ----------------')
                     
-                assert np.min(R0t)>=0
             except:
                 #If optimization fails, try new R0t
                 failed = 1
@@ -167,25 +168,24 @@ def OptimizeWell(params,y0,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
     elif params['l'] == 0:
         assert replenishment == 'external', 'Replenishment must be external until quadprog is implemented.'
         
-        G = params_comp['c']/params_comp['w'] #Divide by w, because we will multiply by wR
+        G = params_comp['c']*params_comp['tau'] #Multiply by tau, because wR has tau in the denominator
         h = np.ones((S,1))*params_comp['m']
 
         wR = cvx.Variable(shape=(M,1)) #weighted resources
         
         #Need to multiply by w to get properly weighted KL divergence
-        Ks = params_comp['R0']*params_comp['w']
-        wK = (Ks).reshape((M,1))
+        wR0 = (params_comp['R0']*params_comp['w']/params_comp['tau']).reshape((M,1))
 
         #Solve
-        obj = cvx.Minimize(cvx.sum(cvx.kl_div(wK, wR)))
+        obj = cvx.Minimize(cvx.sum(cvx.kl_div(wR0, wR)))
         constraints = [G*wR <= h]
         prob = cvx.Problem(obj, constraints)
         prob.solver_stats
-        prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=200)
+        prob.solve(solver=cvx.ECOS,abstol=tol,reltol=tol,warm_start=True,verbose=False,max_iters=200)
 
         #Record the results
         Nf=constraints[0].dual_value[0:S].reshape(S)
-        Rf=wR.value.reshape(M)/params_comp['w']
+        Rf=wR.value.reshape(M)*params_comp['tau']/params_comp['w']
 
 
         
