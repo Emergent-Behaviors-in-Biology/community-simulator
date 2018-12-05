@@ -9,6 +9,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 from numpy.random import dirichlet
+import numbers
 
 #DEFAULT PARAMETERS FOR CONSUMER AND METABOLIC MATRICES, AND INITIAL STATE
 metaparams_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
@@ -69,7 +70,7 @@ def MakeInitialState(metaparams):
         N0[np.random.choice(S_tot,size=metaparams['S'],replace=False),k]=1.
         R0[food_list[k],k] = R0_food_list[k]
     
-    return N0,R0
+    return N0, R0
 
 def MakeMatrices(metaparams):
     """
@@ -95,13 +96,19 @@ def MakeMatrices(metaparams):
     D = metabolic matrix
     """
     #PREPARE VARIABLES
-    #Default waste type is last type in list:
-    if 'waste_type' not in metaparams.keys():
-        metaparams['waste_type']=len(metaparams['MA'])-1
+    #Force number of species to be an array:
+    if isinstance(metaparams['MA'],numbers.Number):
+        metaparams['MA'] = [metaparams['MA']]
+    if isinstance(metaparams['SA'],numbers.Number):
+        metaparams['SA'] = [metaparams['SA']]
     #Force numbers of species to be integers:
     metaparams['MA'] = np.asarray(metaparams['MA'],dtype=int)
     metaparams['SA'] = np.asarray(metaparams['SA'],dtype=int)
     metaparams['Sgen'] = int(metaparams['Sgen'])
+    #Default waste type is last type in list:
+    if 'waste_type' not in metaparams.keys():
+        metaparams['waste_type']=len(metaparams['MA'])-1
+
     #Extract total numbers of resources, consumers, resource types, and consumer families:
     M = np.sum(metaparams['MA'])
     T = len(metaparams['MA'])
