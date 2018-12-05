@@ -52,9 +52,22 @@ def MakeInitialState(metaparams):
     S_tot = int(np.sum(metaparams['SA']))+metaparams['Sgen']
     R0 = np.zeros((M,metaparams['n_wells']))
     N0 = np.zeros((S_tot,metaparams['n_wells']))
-    R0[metaparams['food'],:] = metaparams['R0_food']
+    
+    if not isinstance(metaparams['food'],int):
+        assert len(metaparams['food']) == metaparams['n_wells'], 'Length of food vector must equal n_wells.'
+        food_list = metaparams['food']
+    else:
+        food_list = np.ones(metaparams['n_wells'])*metaparams['food']
+
+    if not isinstance(metaparams['R0_food'],int):
+        assert len(metaparams['R0_food']) == metaparams['n_wells'], 'Length of food vector must equal n_wells.'
+        R0_food_list = metaparams['R0_food']
+    else:
+        R0_food_list = np.ones(metaparams['n_wells'])*metaparams['R0_food']
+
     for k in range(metaparams['n_wells']):
         N0[np.random.choice(S_tot,size=metaparams['S'],replace=False),k]=1.
+        R0[food_list[k],k] = R0_food_list[k]
     
     return N0,R0
 
@@ -204,9 +217,10 @@ def AddLabels(N0_values,R0_values,c):
     
     return N0, R0
 
-def MakeResourceDynamics(response='type I',regulation='independent',replenishment='off'):
+def MakeResourceDynamics(metaparams):
     """
-    Construct resource dynamics.
+    Construct resource dynamics. 'metaparams' must be a dictionary containing at least
+    three entries:
     
     response = {'type I', 'type II', 'type III'} specifies nonlinearity of growth law
     
@@ -236,17 +250,18 @@ def MakeResourceDynamics(response='type I',regulation='independent',replenishmen
          'self-renewing': lambda R,params: params['r']*R*(params['R0']-R),
          'predator': lambda R,params: params['r']*R*(params['R0']-R)-params['u']*R}
     
-    J_in = lambda R,params: (u[regulation](params['c']*R,params)
-                             *params['w']*sigma[response](R,params))
+    J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
+                             *params['w']*sigma[metaparams['response']](R,params))
     J_out = lambda R,params: (params['l']*J_in(R,params)).dot(params['D'].T)
     
-    return lambda N,R,params: (h[replenishment](R,params)
+    return lambda N,R,params: (h[metaparams['replenishment']](R,params)
                                -(J_in(R,params)/params['w']).T.dot(N)
                                +(J_out(R,params)/params['w']).T.dot(N))
 
-def MakeConsumerDynamics(response='type I',regulation='independent',replenishment='off'):
+def MakeConsumerDynamics(metaparams):
     """
-    Construct consumer dynamics.
+    Construct resource dynamics. 'metaparams' must be a dictionary containing at least
+    three entries:
     
     response = {'type I', 'type II', 'type III'} specifies nonlinearity of growth law
     
@@ -271,8 +286,8 @@ def MakeConsumerDynamics(response='type I',regulation='independent',replenishmen
          'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
         }
     
-    J_in = lambda R,params: (u[regulation](params['c']*R,params)
-                             *params['w']*sigma[response](R,params))
+    J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
+                             *params['w']*sigma[metaparams['response']](R,params))
     J_growth = lambda R,params: (1-params['l'])*J_in(R,params)
     
     return lambda N,R,params: params['g']*N*(np.sum(J_growth(R,params),axis=1)-params['m'])
