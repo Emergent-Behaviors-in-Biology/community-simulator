@@ -68,7 +68,7 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,max_iters=1000):
+def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=True,max_iters=1000):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
     """
@@ -146,7 +146,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                 constraints = [G*wR <= h, wR >= 0]
                 prob = cvx.Problem(obj, constraints)
                 prob.solver_stats
-                prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=verbose,max_iters=200)
+                prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=200)
 
                 #Record the results
                 Rf_old = Rf
@@ -157,9 +157,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                 R0t = params_comp['R0'] + Qinv.dot((params_comp['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
                 
                 if verbose:
-                    plt.plot(R0t)
-                    plt.show()
-                    print('Error: '+str(np.linalg.norm(Rf_old - Rf)))
+                    print('Delta: '+str(np.linalg.norm(Rf_old - Rf)))
                     print('---------------- '+str(time.time()-start_time)[:4]+' s ----------------')
                     
             except:
