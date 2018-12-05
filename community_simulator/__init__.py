@@ -70,15 +70,28 @@ class Community:
         
         #SAVE PARAMETERS
         self.params = params.copy()
-        for item in self.params:#strip parameters from DataFrames if necessary
-            if isinstance(self.params[item],pd.DataFrame):
-                self.params[item]=self.params[item].values.squeeze()
-            elif isinstance(self.params[item],list):
-                self.params[item]=np.asarray(self.params[item])
-        if 'D' not in params:#supply dummy values for D and l if D is not specified
-            self.params['D'] = np.ones((self.M,self.M))
-            self.params['l'] = 0
-        self.params['S'] = self.S
+        if isinstance(self.params,list): #Allow parameter file to be a list
+            assert len(self.params) == self.n_wells, 'Length of parameter list must equal n_wells.'
+            for k in range(len(self.params)):
+                for item in self.params[k]:#strip parameters from DataFrames if necessary
+                    if isinstance(self.params[k][item],pd.DataFrame):
+                        self.params[k][item]=self.params[k][item].values.squeeze()
+                    elif isinstance(self.params[k][item],list):
+                        self.params[k][item]=np.asarray(self.params[k][item])
+                    if 'D' not in self.params[k]:#supply dummy values for D and l if D is not specified
+                        self.params[k]['D'] = np.ones((self.M,self.M))
+                        self.params[k]['l'] = 0
+                self.params[k]['S'] = self.S
+        else:
+            for item in self.params:#strip parameters from DataFrames if necessary
+                if isinstance(self.params[item],pd.DataFrame):
+                    self.params[item]=self.params[item].values.squeeze()
+                elif isinstance(self.params[item],list):
+                    self.params[item]=np.asarray(self.params[item])
+            if 'D' not in params:#supply dummy values for D and l if D is not specified
+                self.params['D'] = np.ones((self.M,self.M))
+                self.params['l'] = 0
+            self.params['S'] = self.S
         
         #SAVE SCALE
         self.scale = scale
@@ -130,22 +143,28 @@ class Community:
         replenishment = {external, self-renewing}
         """
         #CONSTRUCT FULL SYSTEM STATE
-        y_in = self.N.append(self.R).T.values
+        y_in = self.N.append(self.R).values
+        
+        #PACKAGE SYSTEM STATE AND PARAMETERS IN LIST OF DICTIONARIES
+        if isinstance(self.params,list):
+            well_info = [{'y0':y_in[:,k],'params':self.params[k]} for k in range(self.n_wells)]
+        else:
+            well_info = [{'y0':y_in[:,k],'params':self.params} for k in range(self.n_wells)]
         
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
-        OptimizeTheseWells = partial(OptimizeWell,self.params,
-                                     replenishment=replenishment,
+        OptimizeTheseWells = partial(OptimizeWell,replenishment=replenishment,
                                      tol=tol,eps=eps,R0t_0=R0t_0)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()
-        y_out = np.asarray(list(map(OptimizeTheseWells,y_in))).squeeze().T
+        y_out = np.asarray(pool.map(OptimizeTheseWells,well_info)).squeeze().T
         pool.close()
         
+        #HANDLE CASE OF A SINGLE-WELL PLATE
         if len(np.shape(y_out)) == 1:
             y_out = y_out[:,np.newaxis]
         
-        #UPDATE STATE VARIABLES WITH RESULTS OF INTEGRATION
+        #UPDATE STATE VARIABLES WITH RESULTS OF OPTIMIZATION
         self.N = pd.DataFrame(y_out[:self.S,:],
                               index = self.N.index, columns = self.N.keys())
         self.R = pd.DataFrame(y_out[self.S:,:],
@@ -162,7 +181,13 @@ class Community:
             are non-renewable.
         """
         #CONSTRUCT FULL SYSTEM STATE
-        y_in = self.N.append(self.R).T.values
+        y_in = self.N.append(self.R).values
+        
+        #PACKAGE SYSTEM STATE AND PARAMETERS IN LIST OF DICTIONARIES
+        if isinstance(self.params,list):
+            well_info = [{'y0':y_in[:,k],'params':self.params[k]} for k in range(self.n_wells)]
+        else:
+            well_info = [{'y0':y_in[:,k],'params':self.params} for k in range(self.n_wells)]
         
         #PREPARE INTEGRATOR FOR PARALLEL PROCESSING
         IntegrateTheseWells = partial(IntegrateWell,self,self.params,
@@ -170,9 +195,10 @@ class Community:
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()
-        y_out = np.asarray(pool.map(IntegrateTheseWells,y_in)).squeeze().T
+        y_out = np.asarray(pool.map(IntegrateTheseWells,well_info)).squeeze().T
         pool.close()
 
+        #HANDLE CASE OF A SINGLE-WELL PLATE
         if len(np.shape(y_out)) == 1:
             y_out = y_out[:,np.newaxis]
         
@@ -310,9 +336,13 @@ class Community:
             well_name = self.N.keys()[0]
         N_well = self.N.copy()[well_name] * f0
         R_well = self.R.copy()[well_name]
+        if isinstance(self.params,list):
+            params_well = self.params[np.where(np.asarray(self.N.keys())==well_name)[0][0]]
+        else:
+            params_well = self.params
         
         #INTEGRATE WELL
-        t, out = IntegrateWell(self,self.params,N_well.append(R_well).values,T=T,ns=ns,T0=T0,
+        t, out = IntegrateWell(self,{'y0':N_well.append(R_well).values,'params':params_well},T=T,ns=ns,T0=T0,
                                return_all=True,log_time=log_time,compress_resources=compress_resources)
         
         Ntraj = out[:,:self.S]
