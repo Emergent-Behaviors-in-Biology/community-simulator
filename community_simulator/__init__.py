@@ -136,7 +136,7 @@ class Community:
         return np.hstack([self.dNdt(y[:S_comp],y[S_comp:],params),
                           self.dRdt(y[:S_comp],y[S_comp:],params)])
     
-    def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,thresh=None):
+    def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,thresh=0.01):
         """
         Find the steady state using convex optimization.
         
@@ -146,14 +146,15 @@ class Community:
         y_in = self.N.append(self.R).values
         
         #PACKAGE SYSTEM STATE AND PARAMETERS IN LIST OF DICTIONARIES
-        if isinstance(self.params,list):
-            well_info = [{'y0':y_in[:,k],'params':self.params[k]} for k in range(self.n_wells)]
+        if not isinstance(self.params,list):
+            params = [self.params]*self.n_wells
         else:
-            well_info = [{'y0':y_in[:,k],'params':self.params} for k in range(self.n_wells)]
+            params = self.params.copy()
+        well_info = [{'y0':y_in[:,k],'params':params[k]} for k in range(self.n_wells)]
         
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
-        OptimizeTheseWells = partial(OptimizeWell,replenishment=replenishment,
-                                     tol=tol,eps=eps,R0t_0=R0t_0,verbose=verbose)
+        OptimizeTheseWells = partial(OptimizeWell,self,replenishment=replenishment,tol=tol,
+                                     eps=eps,R0t_0=R0t_0,verbose=verbose,thresh=thresh)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()
@@ -170,29 +171,28 @@ class Community:
         self.R = pd.DataFrame(y_out[self.S:,:],
                               index = self.R.index, columns = self.R.keys())
 
-        #REMOVE SPECIES HEADING TO EXTINCTION
-        if thresh is None:
-            thresh = 1/self.scale
-        self.N[self.N < thresh] = 0
-
+        #PRINT DIAGNOSTICS
+        dNdt_f = np.asarray(list(map(self.dNdt,self.N.T.values,self.R.T.values,params)))
+        dRdt_f = np.asarray(list(map(self.dRdt,self.N.T.values,self.R.T.values,params)))
+        
         if verbose:
-            err = []
-            k = 0
-            for well in self.N.keys():
-                if isinstance(self.params,list):
-                    params = self.params[k]
-                else:
-                    params = self.params
-                N = self.N[well].values.squeeze()
-                R = self.R[well].values.squeeze()
-                species_exist = np.where(N > 0)[0]
-                err = err+list(dNdt(N,R,params)[species_exist]/N[species_exist])
-                k+=1
-
+            dNdt_f = np.asarray(list(map(self.dNdt,self.N.T.values,self.R.T.values,params))).reshape(-1)
+            dRdt_f = np.asarray(list(map(self.dRdt,self.N.T.values,self.R.T.values,params))).reshape(-1)
+            N = self.N.values.reshape(-1)
+            R = self.R.values.reshape(-1)
+    
             fig,ax = plt.subplots()
-            ax.plot(err,'o',markersize=1)
-            ax.set_ylabel('RMS Per-Capita Growth Rate')
+            ax.plot(dNdt_f[N>0]/N[N>0],'o',markersize=1)
+            ax.set_ylabel('Per-Capita Growth Rate')
+            ax.set_title('Consumers')
             plt.show()
+            
+            fig,ax = plt.subplots()
+            ax.plot(dRdt_f/R,'o',markersize=1)
+            ax.set_ylabel('Per-Capita Growth Rate')
+            ax.set_title('Resources')
+            plt.show()
+            
             
     def Propagate(self,T,compress_resources=False):
         """
