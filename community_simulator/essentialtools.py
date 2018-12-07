@@ -68,13 +68,14 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,max_iters=1000):
+def OptimizeWell(CommunityInstance,well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,
+                 max_iters=1000,thresh=np.inf):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
     """
     
     #UNPACK INPUT
-    y0 = well_info['y0']
+    y0 = well_info['y0'].copy()
     params_comp = well_info['params'].copy()
     N = y0[:params_comp['S']]
     R = y0[params_comp['S']:]
@@ -204,6 +205,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
 
         
     if not failed:
+        Nf[CommunityInstance.dNdt(Nf,Rf,params_comp)/Nf<-thresh] = 0
         N_new = np.zeros(len(N))
         R_new = np.zeros(len(R))
         N_new[np.where(not_extinct_consumers)[0]] = Nf
