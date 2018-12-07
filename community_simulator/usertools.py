@@ -58,13 +58,13 @@ def MakeInitialState(metaparams):
         assert len(metaparams['food']) == metaparams['n_wells'], 'Length of food vector must equal n_wells.'
         food_list = metaparams['food']
     else:
-        food_list = np.ones(metaparams['n_wells'])*metaparams['food']
+        food_list = np.ones(metaparams['n_wells'],dtype=int)*metaparams['food']
 
     if not isinstance(metaparams['R0_food'],int):
         assert len(metaparams['R0_food']) == metaparams['n_wells'], 'Length of food vector must equal n_wells.'
         R0_food_list = metaparams['R0_food']
     else:
-        R0_food_list = np.ones(metaparams['n_wells'])*metaparams['R0_food']
+        R0_food_list = np.ones(metaparams['n_wells'],dtype=int)*metaparams['R0_food']
 
     for k in range(metaparams['n_wells']):
         N0[np.random.choice(S_tot,size=metaparams['S'],replace=False),k]=1.
