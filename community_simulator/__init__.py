@@ -136,7 +136,7 @@ class Community:
         return np.hstack([self.dNdt(y[:S_comp],y[S_comp:],params),
                           self.dRdt(y[:S_comp],y[S_comp:],params)])
     
-    def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10):
+    def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,thresh=None):
         """
         Find the steady state using convex optimization.
         
@@ -153,7 +153,7 @@ class Community:
         
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
         OptimizeTheseWells = partial(OptimizeWell,replenishment=replenishment,
-                                     tol=tol,eps=eps,R0t_0=R0t_0)
+                                     tol=tol,eps=eps,R0t_0=R0t_0,verbose=verbose)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()
@@ -169,6 +169,30 @@ class Community:
                               index = self.N.index, columns = self.N.keys())
         self.R = pd.DataFrame(y_out[self.S:,:],
                               index = self.R.index, columns = self.R.keys())
+
+        #REMOVE SPECIES HEADING TO EXTINCTION
+        if thresh is None:
+            thresh = 1/self.scale
+        self.N[self.N < thresh] = 0
+
+        if verbose:
+            err = []
+            k = 0
+            for well in self.N.keys():
+                if isinstance(self.params,list):
+                    params = self.params[k]
+                else:
+                    params = self.params
+                N = self.N[well].values.squeeze()
+                R = self.R[well].values.squeeze()
+                species_exist = np.where(N > 0)[0]
+                err = err+list(dNdt(N,R,params)[species_exist]/N[species_exist])
+                k+=1
+
+            fig,ax = plt.subplots()
+            ax.plot(err,'o',markersize=1)
+            ax.set_ylabel('RMS Per-Capita Growth Rate')
+            plt.show()
             
     def Propagate(self,T,compress_resources=False):
         """
@@ -190,8 +214,7 @@ class Community:
             well_info = [{'y0':y_in[:,k],'params':self.params} for k in range(self.n_wells)]
         
         #PREPARE INTEGRATOR FOR PARALLEL PROCESSING
-        IntegrateTheseWells = partial(IntegrateWell,self,self.params,
-                                      T=T,compress_resources=compress_resources)
+        IntegrateTheseWells = partial(IntegrateWell,self,T=T,compress_resources=compress_resources)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()
