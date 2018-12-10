@@ -187,19 +187,30 @@ def MakeMatrices(metaparams):
     else:
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
         return 'Error'
-        
+
     #SAMPLE METABOLIC MATRIX FROM DIRICHLET DISTRIBUTION
     DT = pd.DataFrame(np.zeros((M,M)),index=c.keys(),columns=c.keys())
     for type_name in type_names:
         MA = len(DT.loc[type_name])
-        #Set background secretion levels:
-        p = pd.Series(np.ones(M)*(1-metaparams['fs']-metaparams['fw'])/(M-MA-M_waste),index = DT.keys())
-        #Set self-secretion level:
-        p.loc[type_name] = metaparams['fs']/MA
-        #Set waste secretion level:
-        p.loc[waste_name] = metaparams['fw']/M_waste
-        #Sample from dirichlet:
-        DT.loc[type_name] = dirichlet(p/metaparams['D_diversity'],size=MA)
+        if type_name is not waste_name:
+            #Set background secretion levels
+            p = pd.Series(np.ones(M)*(1-metaparams['fs']-metaparams['fw'])/(M-MA-M_waste),index = DT.keys())
+            #Set self-secretion level
+            p.loc[type_name] = metaparams['fs']/MA
+            #Set waste secretion level
+            p.loc[waste_name] = metaparams['fw']/M_waste
+            #Sample from dirichlet
+            DT.loc[type_name] = dirichlet(p/metaparams['D_diversity'],size=MA)
+        else:
+            if M > MA:
+                #Set background secretion levels
+                p = pd.Series(np.ones(M)*(1-metaparams['fw']-metaparams['fs'])/(M-MA),index = DT.keys())
+                #Set self-secretion level
+                p.loc[type_name] = (metaparams['fw']+metaparams['fs'])/MA
+            else:
+                p = pd.Series(np.ones(M)/M,index = DT.keys())
+            #Sample from dirichlet
+            DT.loc[type_name] = dirichlet(p/metaparams['D_diversity'],size=MA)
         
     return c, DT.T
 
