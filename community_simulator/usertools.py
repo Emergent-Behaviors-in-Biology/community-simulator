@@ -130,7 +130,7 @@ def MakeMatrices(metaparams):
     #PERFORM GAUSSIAN SAMPLING
     if metaparams['sampling'] == 'Gaussian':
         #Sample Gaussian random numbers with standard deviation sigc:
-        c = pd.DataFrame(np.random.randn(S,M)*metaparams['sigc'],
+        c = pd.DataFrame(np.random.randn(S,M)*metaparams['sigc']/np.sqrt(M),
                      columns=resource_index,index=consumer_index)
         #Add mean values, biasing consumption of each family towards its preferred resource:
         for k in range(F):
@@ -170,18 +170,18 @@ def MakeMatrices(metaparams):
             for j in range(T):
                 if k==j:
                     c_mean = (metaparams['muc']/M)*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
-                    thetac = metaparams['sigc']**2*1./c_mean
-                    kc = c_mean**2*1./(metaparams['sigc']**2)
+                    thetac = metaparams['sigc']**2*1./(M*c_mean)
+                    kc = M*c_mean**2*1./(metaparams['sigc']**2)
                     c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(metaparams['SA'][k],metaparams['MA'][j]))
                 else:
                     c_mean = (metaparams['muc']/M)*(1-metaparams['q'])
-                    thetac = metaparams['sigc']**2*1./c_mean
-                    kc = c_mean**2*1./(metaparams['sigc']**2)
+                    thetac = metaparams['sigc']**2*1./(M*c_mean)
+                    kc = M*c_mean**2*1./(metaparams['sigc']**2)
                     c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(metaparams['SA'][k],metaparams['MA'][j]))
         if 'GEN' in c.index:
             c_mean = metaparams['muc']/M
-            thetac = metaparams['sigc']**2*1./c_mean
-            kc = c_mean**2*1./(metaparams['sigc']**2)
+            thetac = metaparams['sigc']**2*1./(M*c_mean)
+            kc = M*c_mean**2*1./(metaparams['sigc']**2)
             c.loc['GEN'] = np.random.gamma(kc,scale=thetac,size=(metaparams['Sgen'],M))
     
     else:
