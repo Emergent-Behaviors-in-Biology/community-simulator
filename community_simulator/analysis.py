@@ -11,106 +11,6 @@ import pexpect
 import os
 import pickle
 
-username = 'marsland'
-hostname = 'scc1.bu.edu'
-directory = '/project/biophys/microbial_crm'
-
-def rsync_in(source,dest,username=username,hostname=hostname,directory=directory,password=None):
-    fullsource = '/'.join([directory,source])
-    fullhost = '@'.join([username,hostname])
-    command = ' '.join(['rsync -r -avz',':'.join([fullhost,fullsource]),dest])
-    child = pexpect.spawn(command)
-    child.expect('Password:')
-    child.sendline(password)
-    child.expect('speedup')
-    print(child.before)
-
-def FormatPath(folder):
-    if folder==None:
-        folder=''
-    else:
-        if folder != '':
-            if folder[-1] != '/':
-                folder = folder+'/'
-    return folder
-
-def LoadData(folder,date,load_all=False,load_c=True,task_id=None):
-    folder = FormatPath(folder)
-    if task_id == None:
-        task_id = ''
-    else:
-        task_id = '_'+str(task_id)
-
-    N = pd.read_excel(folder+'Consumers_'+date+task_id+'.xlsx',index_col=[0,1,2],header=[0])
-    R = pd.read_excel(folder+'Resources_'+date+task_id+'.xlsx',index_col=[0,1,2],header=[0])
-    params = pd.read_excel(folder+'Parameters_'+date+task_id+'.xlsx',index_col=[0],header=[0])
-    
-    if load_c:
-        c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
-        return N,R,c,params
-    if load_all:
-        c = pd.read_excel(folder+'c_matrix_'+date+'.xlsx',index_col=[0,1,2],header=[0,1])
-        with open(folder+'Realization_'+date+'.dat','rb') as f:
-            full_params = pickle.load(f)
-        return N,R,c,params,full_params
-    else:
-        return N,R,params
-
-def LoadExperiment(name, file_list):
-    date = file_list.loc[name]['Date']
-    task_id = file_list.loc[name]['Task_ID']
-
-    if type(task_id) == float:
-        task_id_1 = ''
-        task_id_2 = None
-    else:
-        task_id_1 = '_'+str(task_id)
-        task_id_2 = task_id
-        
-    folder = file_list.loc[name]['Folder']
-    filename = folder + '/Realization_'+date+task_id_1+'.dat'
-    with open(filename,'rb') as f:
-        par = pickle.load(f)
-    N,R,params=LoadData(folder,date,task_id=task_id_2,load_c=False)
-    Nflat, Rflat, metadata = FlatResult(N,R,params)
-    metadata['K'] = np.round(metadata['K'])
-    metadata['Leakage'] = 1-np.round(metadata['e'],decimals=1)
-    params['K'] = np.asarray(round(params['K']).values,dtype=int)
-    params['Leakage'] = np.round(1-params['e'],decimals=1)
-    
-    return {name: {'N':N,'R':R,'params':params,'Nflat':Nflat,'Rflat':Rflat,'metadata':metadata,'sim_params':par}}
-
-def FlatResult(N,R,params):
-    types = R.index.levels[1]
-    n_wells = len(N.keys())
-    Nflat = N.loc[N.index.levels[0][0]].T
-    Nflat.index = np.arange(n_wells)
-    Rflat = R.loc[R.index.levels[0][0]].T
-    Rflat.index = np.arange(n_wells)
-    metadata = pd.DataFrame()
-    metadata['Community'] = np.arange(n_wells)
-    for item in params:
-        metadata[item] = params[item].loc[N.index.levels[0][0]]
-    metadata.index = np.arange(n_wells)
-    
-    k=1
-    for rn in N.index.levels[0][1:]:
-        Nflat_temp = N.loc[N.index.levels[0][rn]].T
-        Rflat_temp = R.loc[N.index.levels[0][rn]].T
-        Nflat_temp.index = np.arange(n_wells)+k*n_wells
-        Rflat_temp.index = np.arange(n_wells)+k*n_wells
-        metadata_temp = pd.DataFrame()
-        metadata_temp['Community'] = np.arange(n_wells)
-        for item in params:
-            metadata_temp[item] = params[item].loc[rn]
-        metadata_temp.index = Nflat_temp.index
-        Nflat = Nflat.append(Nflat_temp)
-        Rflat = Rflat.append(Rflat_temp)
-        metadata = metadata.append(metadata_temp)
-        k+=1
-    metadata['Food Type'] = types[R.index.labels[1][metadata['Food']]]
-    return Nflat, Rflat, metadata
-
 def Simpson(N):
     p = N/np.sum(N)
     return 1./np.sum(p**2)
@@ -136,31 +36,6 @@ def CalculateDiversity(df,metadata):
         for item in df.index:
             metadata_new.loc[item,function]=metrics[function](df.loc[item].values)
     return metadata_new
-
-def PostProcess(folder,date,cutoff=0):
-    folder = FormatPath(folder)
-    N,R,c,params = LoadData(folder,date=date)
-    N_IPR = ComputeIPR(N)
-    R_IPR = ComputeIPR(R)
-    
-    ns = len(N_IPR)*len(N_IPR.keys())
-    
-    data = pd.DataFrame(index=list(range(ns)),columns=['Plate','Consumer IPR','Resource IPR']+list(params.keys()))
-    
-    j=0
-    
-    for plate in N_IPR.index:
-        for well in N_IPR.keys():
-            data.loc[j,'Plate'] = plate
-            data.loc[j,'Consumer IPR'] = N_IPR.loc[plate,well]
-            data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
-            for item in params.keys():
-                data.loc[j,item] = params.loc[plate,item]
-            data.loc[j,'Consumer Richness']=(N.loc[plate]>cutoff*(N.loc[plate].sum())).sum()[well]
-            data.loc[j,'Resource Richness']=(R.loc[plate]>cutoff*(R.loc[plate].sum())).sum()[well]
-            j+=1
-    data.to_excel(folder+'data_'+date+'.xlsx')
-    return data
 
 def MakeFlux(response='type I',regulation='independent'):
 
