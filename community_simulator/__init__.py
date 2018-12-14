@@ -337,7 +337,7 @@ class Community:
     
     
     def TestWell(self,T = 4,well_name = None,f0 = 1.,ns=100,log_time = False,T0=0,
-                 compress_resources=False,show_plots=True):
+                 compress_resources=False,show_plots=True,axs=None):
         """
         Run a single well and plot the trajectory.
         
@@ -379,7 +379,10 @@ class Community:
         
         #PLOT TRAJECTORY
         if show_plots:
-            f, axs = plt.subplots(2,sharex=True)
+            if axs is None:
+                f, axs = plt.subplots(2,sharex=True)
+            else:
+                assert len(axs) == 2, 'Must supply two sets of axes.'
 
             if log_time:
                 axs[0].semilogx(t,Ntraj)
@@ -390,5 +393,5 @@ class Community:
             axs[0].set_ylabel('Consumer Abundance')
             axs[1].set_ylabel('Resource Abundance')
             axs[1].set_xlabel('Time')
-            plt.show()
+
         return t, Ntraj, Rtraj

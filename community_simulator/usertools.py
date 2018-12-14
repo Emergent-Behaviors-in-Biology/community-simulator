@@ -13,22 +13,24 @@ import numbers
 
 #DEFAULT PARAMETERS FOR CONSUMER AND METABOLIC MATRICES, AND INITIAL STATE
 mp_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
-          'SA': 50*np.ones(3), #Number of species in each family
+          'SA': 60*np.ones(3), #Number of species in each family
           'MA': 30*np.ones(3), #Number of resources of each type
           'Sgen': 30, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates in Gaussian model
           'sigc': .01, #Standard deviation in consumption rate in Gaussian model
-          'q': 0, #Preference strength (0 for generalist and 1 for specialist)
+          'q': 0.75, #Preference strength (0 for generalist and 1 for specialist)
           'c0':0.01, #Background consumption rate in binary model
           'c1':1., #Specific consumption rate in binary model
           'fs':0.3, #Fraction of secretion flux with same resource type
           'fw':0.6, #Fraction of secretion flux to 'waste' resource
           'D_diversity':0.2, #Variability in secretion fluxes among resources (must be less than 1)
-          'waste_type':0, #Resource type to designate as "waste"
           'n_wells':10, #Number of independent wells
           'S':100, #Number of species per well
           'food':0, #index of food source
-          'R0_food':1000 #unperturbed fixed point for supplied food
+          'R0_food':1000, #unperturbed fixed point for supplied food
+          'regulation':'independent', #metabolic regulation (see dRdt)
+          'response':'type I', #functional response (see dRdt)
+          'replenishment':'off' #resource replenishment (see dRdt)
          }
 
 def MakeInitialState(metaparams):
@@ -253,9 +255,9 @@ def MakeResourceDynamics(metaparams):
         vector of resource rates of change dR/dt
     """
     sigma = {'type I': lambda R,params: params['c']*R,
-             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
-             'type III': lambda R,params: (params['c']*R)**params['n']/(1+((params['c']*R)/params['K'])**params['n'])
-            }
+             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['sigma_max']),
+             'type III': lambda R,params: (params['c']*R)**params['n']/(1+(params['c']*R)**params['n']/params['sigma_max'])
+        }
     
     u = {'independent': lambda x,params: 1.,
          'energy': lambda x,params: (((params['w']*x)**params['nreg']).T
@@ -294,8 +296,8 @@ def MakeConsumerDynamics(metaparams):
         vector of consumer rates of change dN/dt
     """
     sigma = {'type I': lambda R,params: params['c']*R,
-             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
-             'type III': lambda R,params: (params['c']*R)**params['n']/(1+((params['c']*R)/params['K'])**params['n'])
+             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['sigma_max']),
+             'type III': lambda R,params: (params['c']*R)**params['n']/(1+(params['c']*R)**params['n']/params['sigma_max'])
             }
     
     u = {'independent': lambda x,params: 1.,
