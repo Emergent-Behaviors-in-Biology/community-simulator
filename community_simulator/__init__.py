@@ -337,7 +337,7 @@ class Community:
     
     
     def TestWell(self,T = 4,well_name = None,f0 = 1.,ns=100,log_time = False,T0=0,
-                 compress_resources=False,show_plots=True,axs=None):
+                 compress_resources=False,show_plots=True,axs=[]):
         """
         Run a single well and plot the trajectory.
         
@@ -379,8 +379,8 @@ class Community:
         
         #PLOT TRAJECTORY
         if show_plots:
-            if axs is None:
-                f, axs = plt.subplots(2,sharex=True)
+            if axs == []:
+                fig, axs = plt.subplots(2,sharex=True)
             else:
                 assert len(axs) == 2, 'Must supply two sets of axes.'
 
