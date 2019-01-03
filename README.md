@@ -11,9 +11,16 @@ This package is designed for simulating batch culture experiments on complex mic
 Communities can also be run in chemostat mode, where nutrients are continually supplied and populations continuously diluted.  
 
 ## Installation
+### Mac
 To install on a Mac, browse to the community-simulator directory in Terminal, and type
 `pip install -e .`
 The `-e` flag makes the package 'editable,' so that changes made in the community-simulator directory are carried over to the location where Python stores installed module files. If you are running GitHub Desktop, this allows you to simply hit the "fetch origin" button to update the code to the latest version.
+
+### Windows
+The easiest way of installing on Windows is through the Anaconda Navigator (https://www.anaconda.com/download/). Launch the Navigator, and open the Anaconda Terminal. Then navigate to the community-simulator directory, and type
+`python -m pip install -e .`
+
+Note that the parallelization features are not currently supported on Windows, so be sure to set `parallel=False` when initializing an instance of the `Community` class.
 
 ## Documentation
 See the accompanying Jupyter notebook `Tutorial.ipynb` for explanations of the main classes, methods and functions, with illustrative examples.

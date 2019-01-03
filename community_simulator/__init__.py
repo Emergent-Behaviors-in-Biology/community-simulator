@@ -15,7 +15,7 @@ from functools import partial
 from .essentialtools import IntegrateWell, OptimizeWell, TimeStamp
 
 class Community:
-    def __init__(self,init_state,dynamics,params,scale=10**9):
+    def __init__(self,init_state,dynamics,params,scale=10**9,parallel=True):
         """
         Initialize a new "96-well plate" for growing microbial communities.
         
@@ -43,6 +43,9 @@ class Community:
             cells present when N = 1. It is used in the Passage method defined 
             below to perform multinomial sampling, and controls the strength
             of population noise. 
+            
+        parallel allows for disabeling parallel integration, which is currently not
+            supported for Windows machines
         """
         #SAVE INITIAL STATE
         N, R = init_state
@@ -99,8 +102,9 @@ class Community:
                 self.params['l'] = 0
             self.params['S'] = self.S
         
-        #SAVE SCALE
+        #SAVE SCALE AND PARALLEL
         self.scale = scale
+        self.parallel = parallel
             
     def copy(self):
         return copy.deepcopy(self)
@@ -223,9 +227,12 @@ class Community:
         IntegrateTheseWells = partial(IntegrateWell,self,T=T,compress_resources=compress_resources)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
-        pool = Pool()
-        y_out = np.asarray(pool.map(IntegrateTheseWells,well_info)).squeeze().T
-        pool.close()
+        if self.parallel:
+            pool = Pool()
+            y_out = np.asarray(pool.map(IntegrateTheseWells,well_info)).squeeze().T
+            pool.close()
+        else:
+            y_out = np.asarray(list(map(IntegrateTheseWells,well_info))).squeeze().T
 
         #HANDLE CASE OF A SINGLE-WELL PLATE
         if len(np.shape(y_out)) == 1:

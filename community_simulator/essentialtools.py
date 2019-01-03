@@ -9,9 +9,12 @@ Created on Thu Oct 19 11:05:55 2017
 import pandas as pd
 import numpy as np
 from scipy import integrate
-import cvxpy as cvx
 import time
 import matplotlib.pyplot as plt
+try:
+    import cvxpy as cvx
+except:
+    print('cvxpy not installed. Community.SteadyState() not available.')
 
 def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log_time=False,compress_resources=False):
     """
