@@ -134,9 +134,9 @@ def OptimizeWell(CommunityInstance,well_info,replenishment='external',tol=1e-7,e
         
 
         k=0
+        Delta = 1
         while np.linalg.norm(Rf_old - Rf) > tol and k < max_iters:
             try:
-                failed = 0
                 start_time = time.time()
         
                 wR = cvx.Variable(shape=(M,1)) #weighted resources
@@ -160,16 +160,16 @@ def OptimizeWell(CommunityInstance,well_info,replenishment='external',tol=1e-7,e
                 #Update the effective resource concentrations
                 R0t = params_comp['R0'] + Qinv.dot((params_comp['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
                 
+                Delta_old = Delta
+                Delta = np.linalg.norm(Rf_old - Rf)
                 if verbose:
                     print('Iteration: '+str(k))
-                    print('Delta: '+str(np.linalg.norm(Rf_old - Rf)))
+                    print('Delta: '+str(Delta))
                     print('---------------- '+str(time.time()-start_time)[:4]+' s ----------------')
-                    
             except:
                 #If optimization fails, try new R0t
-                failed = 1
                 shift = eps*np.random.randn(M)
-                if np.min(R0t + shift) < 0: #Prevent any values from becomig negative
+                if np.min(R0t + shift) < 0: #Prevent any values from becoming negative
                     R0t = R0t_0*np.ones(M)
                     Rf = np.inf
                     Rf_old = 0
@@ -179,7 +179,14 @@ def OptimizeWell(CommunityInstance,well_info,replenishment='external',tol=1e-7,e
                 if verbose:
                     print('Added '+str(eps)+' times random numbers')
             k+=1
-            
+            #Check for limit cycle
+            if Delta > tol and np.abs(Delta-Delta_old) < tol:
+                print('Limit cycle detected')
+                k = max_iters
+
+        if k == max_iters:
+            failed = 1
+                          
     elif params_comp['l'] == 0:
         assert replenishment == 'external', 'Replenishment must be external until quadprog is implemented.'
         
