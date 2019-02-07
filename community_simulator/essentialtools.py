@@ -134,6 +134,7 @@ def OptimizeWell(CommunityInstance,well_info,replenishment='external',tol=1e-7,e
         
 
         k=0
+        ncyc=0
         Delta = 1
         while np.linalg.norm(Rf_old - Rf) > tol and k < max_iters:
             try:
@@ -180,7 +181,9 @@ def OptimizeWell(CommunityInstance,well_info,replenishment='external',tol=1e-7,e
                     print('Added '+str(eps)+' times random numbers')
             k+=1
             #Check for limit cycle
-            if Delta > tol and np.abs(Delta-Delta_old) < tol:
+            if Delta > tol and np.abs(Delta-Delta_old) < 0.1*tol:
+                ncyc+=1
+            if ncyc > 10:
                 print('Limit cycle detected')
                 k = max_iters
 
