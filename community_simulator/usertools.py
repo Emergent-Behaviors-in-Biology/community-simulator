@@ -248,7 +248,7 @@ def MakeResourceDynamics(metaparams):
         rates to favor the most abundant accessible resources (measured either by
         energy or mass)
     
-    replenishment = {'off','external','self-renewing','predator'} sets choice of 
+    replenishment = {'off','external','self-renewing'} sets choice of
         intrinsic resource dynamics
         
     Returns a function of N, R, and the model parameters, which itself returns the
@@ -268,7 +268,6 @@ def MakeResourceDynamics(metaparams):
     h = {'off': lambda R,params: 0.,
          'external': lambda R,params: (params['R0']-R)/params['tau'],
          'self-renewing': lambda R,params: params['r']*R*(params['R0']-R),
-         'predator': lambda R,params: params['r']*R*(params['R0']-R)-params['u']*R}
     
     J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
                              *params['w']*sigma[metaparams['response']](R,params))
