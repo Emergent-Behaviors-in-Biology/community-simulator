@@ -267,7 +267,8 @@ def MakeResourceDynamics(metaparams):
     
     h = {'off': lambda R,params: 0.,
          'external': lambda R,params: (params['R0']-R)/params['tau'],
-         'self-renewing': lambda R,params: params['r']*R*(params['R0']-R),
+         'self-renewing': lambda R,params: params['r']*R*(params['R0']-R)
+    }
     
     J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
                              *params['w']*sigma[metaparams['response']](R,params))
