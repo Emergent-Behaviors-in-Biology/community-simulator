@@ -160,7 +160,7 @@ class Community:
         if not isinstance(self.params,list):
             params = [self.params]*self.n_wells
         else:
-            params = self.params.copy()
+            params = self.params
         well_info = [{'y0':y_in[:,k],'params':params[k]} for k in range(self.n_wells)]
         
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
