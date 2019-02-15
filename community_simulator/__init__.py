@@ -147,12 +147,13 @@ class Community:
                           self.dRdt(y[:S_comp],y[S_comp:],params)])
     
     def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10,
-                    max_iters=100,verbose=False,thresh=0.01):
+                    max_iters=100,verbose=False,plot=False,thresh=0.01):
         """
         Find the steady state using convex optimization.
         
         replenishment = {external, self-renewing}
         """
+        
         #CONSTRUCT FULL SYSTEM STATE
         y_in = self.N.append(self.R).values
         
@@ -164,17 +165,15 @@ class Community:
         well_info = [{'y0':y_in[:,k],'params':params[k]} for k in range(self.n_wells)]
         
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
-        OptimizeTheseWells = partial(OptimizeWell,self,replenishment=replenishment,tol=tol,
+        OptimizeTheseWells = partial(OptimizeWell,replenishment=replenishment,tol=tol,
                                      max_iters=max_iters,eps=eps,R0t_0=R0t_0,verbose=verbose,thresh=thresh)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()
         y_out = np.asarray(pool.map(OptimizeTheseWells,well_info)).squeeze().T
-        pool.close()
-        
-        #HANDLE CASE OF A SINGLE-WELL PLATE
-        if len(np.shape(y_out)) == 1:
+        if len(np.shape(y_out)) == 1:#handle case of single-well plate
             y_out = y_out[:,np.newaxis]
+        pool.close()
         
         #UPDATE STATE VARIABLES WITH RESULTS OF OPTIMIZATION
         self.N = pd.DataFrame(y_out[:self.S,:],
@@ -186,7 +185,7 @@ class Community:
         dNdt_f = np.asarray(list(map(self.dNdt,self.N.T.values,self.R.T.values,params)))
         dRdt_f = np.asarray(list(map(self.dRdt,self.N.T.values,self.R.T.values,params)))
         
-        if verbose:
+        if plot:
             dNdt_f = np.asarray(list(map(self.dNdt,self.N.T.values,self.R.T.values,params))).reshape(-1)
             dRdt_f = np.asarray(list(map(self.dRdt,self.N.T.values,self.R.T.values,params))).reshape(-1)
             N = self.N.values.reshape(-1)
