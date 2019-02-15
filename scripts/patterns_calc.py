@@ -73,4 +73,4 @@ HMP.metadata = pd.DataFrame(['Env. 1']*n_samples+['Env. 2']*n_samples+['Env. 3']
 HMP.SteadyState(verbose=True,plot=False,tol=1e-3)
 
 with open('/project/biophys/microbial_crm/data/HMP3.dat','wb') as f:
-    pickle.dump([HMP.N,HMP.R,params[0],HMP.metadata],f)
+    pickle.dump([HMP.N,HMP.R,params[0],R0,HMP.metadata],f)
