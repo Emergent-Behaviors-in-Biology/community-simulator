@@ -42,7 +42,7 @@ c,D = MakeMatrices(mp)
 #Set up the experiment
 HMP_protocol = {'R0_food':1000, #unperturbed fixed point for supplied food
                 'n_wells':3*n_samples, #Number of independent wells
-                'S':2500, #Number of species per well
+                'S':500, #Number of species per well
                 'food':np.asarray(np.hstack((np.zeros(n_samples),1*np.ones(n_samples),
                                              2*np.ones(n_samples))),dtype=int) #index of food source
                 }
@@ -72,5 +72,5 @@ HMP.metadata = pd.DataFrame(['Env. 1']*n_samples+['Env. 2']*n_samples+['Env. 3']
 
 HMP.SteadyState(verbose=True,plot=False,tol=1e-3)
 
-with open('/project/biophys/microbial_crm/data/HMP3.dat','wb') as f:
+with open('/project/biophys/microbial_crm/data/HMP4.dat','wb') as f:
     pickle.dump([HMP.N,HMP.R,params[0],R0,HMP.metadata],f)
