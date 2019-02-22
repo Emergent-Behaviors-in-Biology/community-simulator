@@ -20,7 +20,7 @@ mp = {'sampling':'Binary', #Sampling method
     'Sgen': 0, #Number of generalist species
     'muc': 10, #Mean sum of consumption rates in Gaussian model
     'q': 0, #Preference strength (0 for generalist and 1 for specialist)
-    'c0':0.01, #Background consumption rate in binary model
+    'c0':0, #Background consumption rate in binary model
     'c1':1., #Specific consumption rate in binary model
     'fs':0.45, #Fraction of secretion flux with same resource type
     'fw':0.45, #Fraction of secretion flux to 'waste' resource
@@ -45,7 +45,7 @@ c,D = MakeMatrices(mp)
 #R0 matrix later on
 HMP_protocol = {'R0_food':R0_food, #unperturbed fixed point for supplied food
                 'n_wells':3*n_samples, #Number of independent wells
-                'S':150, #Number of species per well
+                'S':2500, #Number of species per well
                 'food':0 #index of food source
                 }
 HMP_protocol.update(mp)
@@ -80,5 +80,5 @@ HMP.metadata = pd.DataFrame(['Env. 1']*n_samples+['Env. 2']*n_samples+['Env. 3']
 
 HMP.SteadyState(verbose=True,plot=False,tol=1e-3)
 
-with open('/project/biophys/microbial_crm/data/HMP6.dat','wb') as f:
+with open('/project/biophys/microbial_crm/data/HMP_env.dat','wb') as f:
     pickle.dump([HMP.N,HMP.R,params[0],R0,HMP.metadata],f)
