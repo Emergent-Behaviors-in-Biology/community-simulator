@@ -41,8 +41,9 @@ c,D = MakeMatrices(mp)
 
 #Set up the experiment
 food_list = np.asarray([item for k in range(16) for item in [k]*125])
+n_samples = len(food_list)
 EMP_protocol = {'R0_food':R0_food, #unperturbed fixed point for supplied food
-                'n_wells':len(food_list), #Number of independent wells
+                'n_wells':n_samples, #Number of independent wells
                 'S':2500, #Number of species per well
                 'food':food_list #index of food source
                 }
