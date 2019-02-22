@@ -150,7 +150,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                 constraints = [G*wR <= h, wR >= 0]
                 prob = cvx.Problem(obj, constraints)
                 prob.solver_stats
-                prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=200)
+                prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=5000)
 
                 #Record the results
                 Rf_old = Rf
