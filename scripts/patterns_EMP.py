@@ -49,7 +49,7 @@ EMP_protocol = {'R0_food':R0_food, #unperturbed fixed point for supplied food
 EMP_protocol.update(mp)
 
 #Make initial state
-N0,R0 = MakeInitialState(HMP_protocol)
+N0,R0 = MakeInitialState(EMP_protocol)
 R0 = np.zeros(np.shape(R0))
 alpha = np.linspace(0,1,n_samples)
 for k in range(3):
