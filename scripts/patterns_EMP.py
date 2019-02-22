@@ -50,13 +50,7 @@ EMP_protocol = {'R0_food':R0_food, #unperturbed fixed point for supplied food
 EMP_protocol.update(mp)
 
 #Make initial state
-N0,R0 = MakeInitialState(EMP_protocol)
-R0 = np.zeros(np.shape(R0))
-alpha = np.linspace(0,1,n_samples)
-for k in range(3):
-    R0[k*2,k*n_samples:(k+1)*n_samples] = alpha*R0_food
-    R0[k*2+1,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
-N0,R0 = AddLabels(N0,R0,c)
+N0,R0 = AddLabels(*MakeInitialState(EMP_protocol),c)
 init_state=[N0,R0]
 metadata = pd.DataFrame(food_list,index=N0.T.index,columns=['Food Source'])
 
@@ -66,7 +60,7 @@ params=[{'w':1,
         'g':1,
         'l':0.8,
         'R0':R0.values[:,k],
-        'm':m+7.5*np.random.rand(),
+        'm':m+3.5*np.random.rand(),
         'tau':1
         } for k in range(len(N0.T))]
 for k in range(len(params)):
@@ -75,12 +69,12 @@ for k in range(len(params)):
 
 metadata['m'] = np.asarray([np.mean(item['m']) for item in params])
 EMP = Community(init_state,dynamics,params)
-EMP.SteadyState(verbose=True,plot=False,tol=1e-3)
+EMP.SteadyState(verbose=True,plot=False,tol=1e-3,eps=0.1)
 with open('/project/biophys/microbial_crm/data/EMP.dat','wb') as f:
     pickle.dump([EMP.N,EMP.R,params[0],R0,metadata],f)
 
 for k in range(len(params)):
-    params[k]['m'] = m + food_list*7.5/15
+    params[k]['m'] = m + food_list*3.5/15
 metadata['m'] = np.asarray([np.mean(item['m']) for item in params])
 EMP = Community(init_state,dynamics,params)
 EMP.SteadyState(verbose=True,plot=False,tol=1e-3)
