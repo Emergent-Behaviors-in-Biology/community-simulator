@@ -180,7 +180,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                     print('Added '+str(eps)+' times random numbers')
             k+=1
             #Check for limit cycle
-            if Delta > tol and np.abs(Delta-Delta_old) < 0.1*tol:
+            if np.isfinite(Delta) and Delta > tol and np.abs(Delta-Delta_old) < 0.1*tol:
                 ncyc+=1
             if ncyc > 10:
                 print('Limit cycle detected')
