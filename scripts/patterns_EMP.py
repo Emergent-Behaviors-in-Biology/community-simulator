@@ -11,9 +11,8 @@ from community_simulator.usertools import MakeConsumerDynamics,MakeResourceDynam
 from community_simulator import Community
 import pickle
 
-n_samples = 300
+R0_food = 1000
 
-#General Parameters
 mp = {'sampling':'Binary', #Sampling method
     'SA': 5000, #Number of species in each family
     'MA': 300, #Number of resources of each type
@@ -41,38 +40,49 @@ dynamics = [dNdt,dRdt]
 c,D = MakeMatrices(mp)
 
 #Set up the experiment
-HMP_protocol = {'R0_food':1000, #unperturbed fixed point for supplied food
-                'n_wells':3*n_samples, #Number of independent wells
-                'S':4500, #Number of species per well
-                'food':np.asarray(np.hstack((np.zeros(n_samples),1*np.ones(n_samples),
-                                             2*np.ones(n_samples))),dtype=int) #index of food source
+food_list = np.asarray([item for k in range(16) for item in [k]*125])
+EMP_protocol = {'R0_food':R0_food, #unperturbed fixed point for supplied food
+                'n_wells':len(food_list), #Number of independent wells
+                'S':2500, #Number of species per well
+                'food':food_list #index of food source
                 }
-HMP_protocol.update(mp)
+EMP_protocol.update(mp)
+
 #Make initial state
-N0,R0 = AddLabels(*MakeInitialState(HMP_protocol),c)
+N0,R0 = MakeInitialState(HMP_protocol)
+R0 = np.zeros(np.shape(R0))
+alpha = np.linspace(0,1,n_samples)
+for k in range(3):
+    R0[k*2,k*n_samples:(k+1)*n_samples] = alpha*R0_food
+    R0[k*2+1,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
+N0,R0 = AddLabels(N0,R0,c)
 init_state=[N0,R0]
-metadata = pd.DataFrame(['Env. 1']*n_samples+['Env. 2']*n_samples+['Env. 3']*n_samples,
-                        index=N0.T.index,columns=['Food Source'])
+metadata = pd.DataFrame(food_list,index=N0.T.index,columns=['Food Source'])
+
 #Make parameter list
-m = 1+0.01*np.random.randn(len(c))
+m = 0.5+0.01*np.random.randn(len(c))
 params=[{'w':1,
         'g':1,
         'l':0.8,
         'R0':R0.values[:,k],
-        'r':1.,
+        'm':m+4.5*np.random.rand()
         'tau':1
         } for k in range(len(N0.T))]
 for k in range(len(params)):
     params[k]['c'] = c
     params[k]['D'] = D
-    params[k]['m'] = m
 
+metadata['m'] = np.asarray([np.mean(item['m']) for item in params])
+EMP = Community(init_state,dynamics,params)
+EMP.SteadyState(verbose=True,plot=False,tol=1e-3)
+with open('/project/biophys/microbial_crm/data/EMP.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params[0],R0,metadata],f)
 
-for S in [4500,2500,500]:
-    HMP_protocol['S'] = S
-    N0,R0 = AddLabels(*MakeInitialState(HMP_protocol),c)
-    init_state=[N0,R0]
-    HMP = Community(init_state,dynamics,params)
-    HMP.SteadyState(verbose=True,plot=False,tol=1e-3)
-    with open('/project/biophys/microbial_crm/data/HMP_S'+str(S)+'.dat','wb') as f:
-        pickle.dump([HMP.N,HMP.R,params[0],R0,metadata],f)
+for k in range(len(params)):
+    params[k]['m'] = m + food_list*4.5/15
+metadata['m'] = np.asarray([np.mean(item['m']) for item in params])
+EMP = Community(init_state,dynamics,params)
+EMP.SteadyState(verbose=True,plot=False,tol=1e-3)
+with open('/project/biophys/microbial_crm/data/EMP_corr.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params[0],R0,metadata],f)
+
