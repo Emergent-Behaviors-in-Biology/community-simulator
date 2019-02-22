@@ -68,7 +68,7 @@ for k in range(len(params)):
     params[k]['m'] = m
 
 
-for S in [4500,2500,500]:
+for S in [4500]:
     HMP_protocol['S'] = S
     N0,R0 = AddLabels(*MakeInitialState(HMP_protocol),c)
     init_state=[N0,R0]
