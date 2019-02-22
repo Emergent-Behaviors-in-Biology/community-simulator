@@ -15,11 +15,11 @@ n_samples = 300
 R0_food = 1000
 
 mp = {'sampling':'Binary', #Sampling method
-    'SA': 5000, #Number of species in each family
-    'MA': 300, #Number of resources of each type
-    'Sgen': 0, #Number of generalist species
+    'SA': np.ones(3)*1500, #Number of species in each family
+    'MA': np.ones(3)*100, #Number of resources of each type
+    'Sgen': 500, #Number of generalist species
     'muc': 10, #Mean sum of consumption rates in Gaussian model
-    'q': 0, #Preference strength (0 for generalist and 1 for specialist)
+    'q': 0.9, #Preference strength (0 for generalist and 1 for specialist)
     'c0':0, #Background consumption rate in binary model
     'c1':1., #Specific consumption rate in binary model
     'fs':0.45, #Fraction of secretion flux with same resource type
@@ -27,7 +27,8 @@ mp = {'sampling':'Binary', #Sampling method
     'D_diversity':0.3, #Variability in secretion fluxes among resources (must be less than 1)
     'regulation':'independent',
     'replenishment':'external',
-    'response':'type I'
+    'response':'type I',
+    'waste_type':2
     }
 
 #Construct dynamics
@@ -55,8 +56,8 @@ N0,R0 = MakeInitialState(HMP_protocol)
 R0 = np.zeros(np.shape(R0))
 alpha = np.linspace(0,1,n_samples)
 for k in range(3):
-    R0[k*2,k*n_samples:(k+1)*n_samples] = alpha*R0_food
-    R0[k*2+1,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
+    R0[k*100,k*n_samples:(k+1)*n_samples] = alpha*R0_food
+    R0[k*100+1,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
 N0,R0 = AddLabels(N0,R0,c)
 init_state=[N0,R0]
 
@@ -80,5 +81,5 @@ HMP.metadata = pd.DataFrame(['Env. 1']*n_samples+['Env. 2']*n_samples+['Env. 3']
 
 HMP.SteadyState(verbose=True,plot=False,tol=1e-3)
 
-with open('/project/biophys/microbial_crm/data/HMP_env.dat','wb') as f:
+with open('/project/biophys/microbial_crm/data/HMP_env_family.dat','wb') as f:
     pickle.dump([HMP.N,HMP.R,params[0],R0,HMP.metadata],f)
