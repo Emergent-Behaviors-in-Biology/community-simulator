@@ -57,7 +57,7 @@ R0 = np.zeros(np.shape(R0))
 alpha = np.linspace(0,1,n_samples)
 for k in range(3):
     R0[2*k*50,k*n_samples:(k+1)*n_samples] = alpha*R0_food
-    R0[(k+1)*50,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
+    R0[(2*k+1)*50,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
 N0,R0 = AddLabels(N0,R0,c)
 init_state=[N0,R0]
 
