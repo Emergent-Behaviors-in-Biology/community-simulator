@@ -15,9 +15,9 @@ n_samples = 300
 R0_food = 1000
 
 mp = {'sampling':'Binary', #Sampling method
-    'SA': np.ones(3)*1500, #Number of species in each family
-    'MA': np.ones(3)*100, #Number of resources of each type
-    'Sgen': 500, #Number of generalist species
+    'SA': np.ones(6)*800, #Number of species in each family
+    'MA': np.ones(6)*50, #Number of resources of each type
+    'Sgen': 200, #Number of generalist species
     'muc': 10, #Mean sum of consumption rates in Gaussian model
     'q': 0.9, #Preference strength (0 for generalist and 1 for specialist)
     'c0':0, #Background consumption rate in binary model
@@ -28,7 +28,7 @@ mp = {'sampling':'Binary', #Sampling method
     'regulation':'independent',
     'replenishment':'external',
     'response':'type I',
-    'waste_type':2
+    'waste_type':5
     }
 
 #Construct dynamics
@@ -56,8 +56,8 @@ N0,R0 = MakeInitialState(HMP_protocol)
 R0 = np.zeros(np.shape(R0))
 alpha = np.linspace(0,1,n_samples)
 for k in range(3):
-    R0[k*100,k*n_samples:(k+1)*n_samples] = alpha*R0_food
-    R0[k*100+1,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
+    R0[2*k*50,k*n_samples:(k+1)*n_samples] = alpha*R0_food
+    R0[(k+1)*50,k*n_samples:(k+1)*n_samples] = (1-alpha)*R0_food
 N0,R0 = AddLabels(N0,R0,c)
 init_state=[N0,R0]
 
