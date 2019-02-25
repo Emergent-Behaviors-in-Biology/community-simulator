@@ -11,11 +11,12 @@ from community_simulator.usertools import MakeConsumerDynamics,MakeResourceDynam
 from community_simulator import Community
 import pickle
 
-R0_food = 1000
+folder = '/project/biophys/microbial_crm/data/'
 
+###############GENERAL SETUP#####################
 mp = {'sampling':'Binary', #Sampling method
-    'SA': 5000, #Number of species in each family
-    'MA': 300, #Number of resources of each type
+    'SA': 180, #Number of species in each family
+    'MA': 90, #Number of resources of each type
     'Sgen': 0, #Number of generalist species
     'muc': 10, #Mean sum of consumption rates in Gaussian model
     'q': 0, #Preference strength (0 for generalist and 1 for specialist)
@@ -23,61 +24,84 @@ mp = {'sampling':'Binary', #Sampling method
     'c1':1., #Specific consumption rate in binary model
     'fs':0.45, #Fraction of secretion flux with same resource type
     'fw':0.45, #Fraction of secretion flux to 'waste' resource
-    'D_diversity':0.3, #Variability in secretion fluxes among resources (must be less than 1)
+    'D_diversity':0.05, #Variability in secretion fluxes among resources (must be less than 1)
     'regulation':'independent',
     'replenishment':'external',
     'response':'type I'
     }
-
 #Construct dynamics
 def dNdt(N,R,params):
     return MakeConsumerDynamics(mp)(N,R,params)
 def dRdt(N,R,params):
     return MakeResourceDynamics(mp)(N,R,params)
 dynamics = [dNdt,dRdt]
-
 #Construct matrices
 c,D = MakeMatrices(mp)
 
-#Set up the experiment
-food_list = np.asarray([item for k in range(16) for item in [k]*125])
-n_samples = len(food_list)
-EMP_protocol = {'R0_food':R0_food, #unperturbed fixed point for supplied food
-                'n_wells':n_samples, #Number of independent wells
-                'S':2500, #Number of species per well
-                'food':food_list #index of food source
+#################CONSTANT ENVIRONMENT######################
+EMP_protocol = {'R0_food':200, #unperturbed fixed point for supplied food
+                'n_wells':300, #Number of independent wells
+                'S':150, #Number of species per well
+                'food':0 #index of food source
                 }
 EMP_protocol.update(mp)
-
 #Make initial state
-N0,R0 = AddLabels(*MakeInitialState(EMP_protocol),c)
+N0,R0 = MakeInitialState(EMP_protocol)
+Stot = len(N0)
+nwells = len(N0.T)
+N0,R0 = AddLabels(N0,R0,c)
 init_state=[N0,R0]
-metadata = pd.DataFrame(food_list,index=N0.T.index,columns=['Food Source'])
-
 #Make parameter list
-m = 0.1+0.01*np.random.randn(len(c))
-params=[{'w':1,
-        'g':1,
-        'l':0.8,
-        'R0':R0.values[:,k],
-        'm':m+4.5*np.random.rand(),
-        'tau':1
-        } for k in range(len(N0.T))]
-for k in range(len(params)):
-    params[k]['c'] = c
-    params[k]['D'] = D
+m0 = 0.5+0.01*np.random.randn(len(c))
+params_EMP=[{'c':c,
+            'm':m0+10*np.random.rand(),
+            'w':1,
+            'D':D,
+            'g':1,
+            'l':0.8,
+            'R0':R0.values[:,k],
+            'tau':1
+            } for k in range(len(N0.T))]
+EMP = Community(init_state,dynamics,params_EMP)
+EMP.metadata = pd.DataFrame(np.asarray([np.mean(item['m']) for item in params_EMP]),index=N0.T.index,columns=['m'])
+#Integrate to steady state and save
+print('Starting integration.')
+NTraj, Rtraj = EMP.RunExperiment(np.eye(EMP_protocol['n_wells']),2,10,refresh_resource=False,scale=1e6)
+with open(folder+'EMP.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params_EMP,EMP.metadata],f)
+print('Finished stage 1.')
+NTraj, Rtraj = EMP.RunExperiment(np.eye(EMP_protocol['n_wells']),100,10,refresh_resource=False,scale=1e6)
+with open(folder+'EMP.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params_EMP,EMP.metadata],f)
+print('Finished stage 2.')
+NTraj, Rtraj = EMP.RunExperiment(np.eye(EMP_protocol['n_wells']),1000,10,refresh_resource=False,scale=1e6)
+with open(folder+'EMP.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params_EMP,EMP.metadata],f)
+print('Finished stage 3.')
 
-metadata['m'] = np.asarray([np.mean(item['m']) for item in params])
-EMP = Community(init_state,dynamics,params)
-EMP.SteadyState(verbose=True,plot=False,tol=1e-3,eps=0.1)
-with open('/project/biophys/microbial_crm/data/EMP.dat','wb') as f:
-    pickle.dump([EMP.N,EMP.R,params[0],R0,metadata],f)
-
-for k in range(len(params)):
-    params[k]['m'] = m + food_list[k]*4.5/15
-metadata['m'] = np.asarray([np.mean(item['m']) for item in params])
-EMP = Community(init_state,dynamics,params)
-EMP.SteadyState(verbose=True,plot=False,tol=1e-3)
-with open('/project/biophys/microbial_crm/data/EMP_corr.dat','wb') as f:
-    pickle.dump([EMP.N,EMP.R,params[0],R0,metadata],f)
+########################RANDOM ENVIRONMENTS#############################
+EMP_protocol['food'] = np.random.choice(np.arange(90,dtype=int),size=300)
+#Make initial state
+N0,R0 = MakeInitialState(EMP_protocol)
+N0,R0 = AddLabels(N0,R0,c)
+init_state=[N0,R0]
+#Update food source
+for k in range(len(N0.T)):
+    params_EMP[k]['R0'] = R0.values[:,k]
+EMP = Community(init_state,dynamics,params_EMP)
+EMP.metadata = pd.DataFrame(np.asarray([np.mean(item['m']) for item in params_EMP]),index=N0.T.index,columns=['m'])
+#Integrate to steady state and save
+print('Starting integration.')
+NTraj, Rtraj = EMP.RunExperiment(np.eye(EMP_protocol['n_wells']),2,10,refresh_resource=False,scale=1e6)
+with open(folder+'EMP2.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params_EMP,EMP.metadata],f)
+print('Finished stage 1.')
+NTraj, Rtraj = EMP.RunExperiment(np.eye(EMP_protocol['n_wells']),100,10,refresh_resource=False,scale=1e6)
+with open(folder+'EMP2.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params_EMP,EMP.metadata],f)
+print('Finished stage 2.')
+NTraj, Rtraj = EMP.RunExperiment(np.eye(EMP_protocol['n_wells']),1000,10,refresh_resource=False,scale=1e6)
+with open(folder+'EMP2.dat','wb') as f:
+    pickle.dump([EMP.N,EMP.R,params_EMP,EMP.metadata],f)
+print('Finished stage 3.')
 
