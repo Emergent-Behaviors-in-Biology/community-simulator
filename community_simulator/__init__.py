@@ -146,8 +146,8 @@ class Community:
         return np.hstack([self.dNdt(y[:S_comp],y[S_comp:],params),
                           self.dRdt(y[:S_comp],y[S_comp:],params)])
     
-    def SteadyState(self,replenishment='external',tol=1e-7,eps=1,R0t_0=10,
-                    max_iters=100,verbose=False,plot=False,thresh=0.01):
+    def SteadyState(self,replenishment='external',tol=1e-7,shift_size=1,
+                    eps=1e-7,R0t_0=10,max_iters=100,verbose=False,plot=False):
         """
         Find the steady state using convex optimization.
         
@@ -166,7 +166,8 @@ class Community:
         
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
         OptimizeTheseWells = partial(OptimizeWell,replenishment=replenishment,tol=tol,
-                                     max_iters=max_iters,eps=eps,R0t_0=R0t_0,verbose=verbose,thresh=thresh)
+                                     shift_size=shift_size,max_iters=max_iters,
+                                     eps=eps,R0t_0=R0t_0,verbose=verbose)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         pool = Pool()

@@ -71,7 +71,7 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verbose=False,max_iters=1000,thresh=np.inf):
+def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,R0t_0=10,verbose=False,max_iters=1000):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
     """
@@ -142,7 +142,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                 wR = cvx.Variable(shape=(M,1)) #weighted resources
         
                 #Need to multiply by w to get properly weighted KL divergence
-                R0t[R0t<0] = 0.01
+                R0t[R0t<0] = eps
                 wR0 = (R0t*w).reshape((M,1))
 
                 #Solve
@@ -168,7 +168,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,eps=1,R0t_0=10,verb
                     print('---------------- '+str(time.time()-start_time)[:4]+' s ----------------')
             except:
                 #If optimization fails, try new R0t
-                shift = eps*np.random.randn(M)
+                shift = shift_size*np.random.randn(M)
                 if np.min(R0t + shift) < 0: #Prevent any values from becoming negative
                     R0t = R0t_0*np.ones(M)
                     Rf = np.inf
