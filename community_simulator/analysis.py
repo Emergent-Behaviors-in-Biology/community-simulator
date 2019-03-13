@@ -167,3 +167,16 @@ def LotkaVolterra(N,R,par):
     
     return K, alpha
 
+def validate_simulation(com):
+    params_list = [com.params for k in range(len(com.N.T))]
+    dNdt_list = pd.DataFrame(np.asarray(list(map(dNdt,com.N.T.values,com.R.T.values,params_list))).T,
+                             index=com.N.index,columns=com.N.columns)
+    dlogNdt = dNdt_list/com.N
+
+    accuracy = np.max(abs(dlogNdt))
+    failures = np.sum(np.isnan(com.N.iloc[0]))
+    invaders = np.sum(dNdt_list[com.N==0]>0)
+                             
+    return {'Mean Accuracy':accuracy.mean(),'Std. Dev. Accuracy':accuracy.std(),
+            'Failures':failures,'Invasions':(invaders>0).sum()}
+

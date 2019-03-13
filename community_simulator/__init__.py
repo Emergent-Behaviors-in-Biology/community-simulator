@@ -147,7 +147,7 @@ class Community:
                           self.dRdt(y[:S_comp],y[S_comp:],params)])
     
     def SteadyState(self,replenishment='external',tol=1e-7,shift_size=1,
-                    eps=1e-7,R0t_0=10,max_iters=100,verbose=False,plot=False):
+                    eps=1e-10,R0t_0=10,max_iters=5000,verbose=False,plot=False):
         """
         Find the steady state using convex optimization.
         
