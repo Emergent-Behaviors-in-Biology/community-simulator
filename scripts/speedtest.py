@@ -35,7 +35,7 @@ def dRdt(N,R,params):
     return MakeResourceDynamics(mp)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-data_int = pd.DataFrame(index = [20,40,80],
+data_int = pd.DataFrame(index = [20,40,80,160,320,640,1280],
                        columns = ['Run Time','Mean Accuracy','Std. Dev. Accuracy','Failures','Invasions'])
 data_opt = data_int.copy()
 
