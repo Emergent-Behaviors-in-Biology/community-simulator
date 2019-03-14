@@ -182,17 +182,19 @@ def validate_simulation(com_in,N0):
     failures = np.sum(np.isnan(com.N.iloc[0]))
     survive = com.N>0
     com.N[survive] = 1
-    params_list = [com.params for k in range(len(com.N.T))]
+    if type(com.params) is not list:
+        params_list = [com.params for k in range(len(com.N.T))]
+    else:
+        params_list = com.params
     dlogNdt_survive = pd.DataFrame(np.asarray(list(map(com.dNdt,com.N.T.values,com.R.T.values,params_list))).T,
                                    index=com.N.index,columns=com.N.columns)
-        
-    com.N[N0>0] = 1
-    com.N[survive] = 0
-    dlogNdt_extinct = pd.DataFrame(np.asarray(list(map(com.dNdt,com.N.T.values,com.R.T.values,params_list))).T,
-                                   index=com.N.index,columns=com.N.columns)
-                                   
+
+com.N[N0>0] = 1
+com.N[survive] = 0
+dlogNdt_extinct = pd.DataFrame(np.asarray(list(map(com.dNdt,com.N.T.values,com.R.T.values,params_list))).T,
+                               index=com.N.index,columns=com.N.columns)
+
     accuracy = np.max(abs(dlogNdt_survive))
     invaders = np.sum(dlogNdt_extinct>0)
-                                   
+    
     return {'Mean Accuracy':accuracy.mean(),'Std. Dev. Accuracy':accuracy.std(),'Failures':failures,'Invasions':(invaders>0).sum()}
-
