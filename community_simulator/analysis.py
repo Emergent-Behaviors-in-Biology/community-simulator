@@ -11,6 +11,16 @@ import pexpect
 import os
 import pickle
 
+def rsync_in(source,dest,username,hostname,directory,password):
+    fullsource = '/'.join([directory,source])
+    fullhost = '@'.join([username,hostname])
+    command = ' '.join(['rsync -r -avz',':'.join([fullhost,fullsource]),dest])
+    child = pexpect.spawn(command)
+    child.expect('Password:')
+    child.sendline(password)
+    child.expect('speedup')
+    print(child.before)
+
 def Simpson(N):
     p = N/np.sum(N)
     return 1./np.sum(p**2)
