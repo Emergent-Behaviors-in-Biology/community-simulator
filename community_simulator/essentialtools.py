@@ -182,6 +182,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
             #Check for limit cycle
             if np.isfinite(Delta) and Delta > tol and np.abs(Delta-Delta_old) < 0.1*tol:
                 ncyc+=1
+                #print('R_0 = '+str(Rf[0]))
             if ncyc > 10:
                 print('Limit cycle detected')
                 k = max_iters
