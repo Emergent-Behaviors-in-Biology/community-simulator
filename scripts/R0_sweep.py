@@ -20,7 +20,7 @@ mp = {'sampling':'Binary', #Sampling method
               'regulation':'independent',
               'replenishment':'external',
               'response':'type I',       
-              'n_wells':10, #Number of independent wells
+              'n_wells':100, #Number of independent wells
               'food':0
              }
 
@@ -31,7 +31,7 @@ def dRdt(N,R,params):
     return MakeResourceDynamics(mp)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-data_opt = pd.DataFrame(index = 10*np.arange(1,50,dtype=int),
+data_opt = pd.DataFrame(index = 10*np.arange(1,30,dtype=int),
                        columns = ['Run Time','Mean Accuracy','Std. Dev. Accuracy','Failures','Invasions'])
 
 for R0 in data_opt.index:
