@@ -36,24 +36,26 @@ data_opt = pd.DataFrame(index = 10*np.arange(1,50,dtype=int),
 
 for R0 in data_opt.index:
     mp.update({'MA':100,
-               'SA':200,
+               'SA':100,
                'R0_food':R0,
                'S':100})
 
-    c, D = MakeMatrices(mp)
     init_state = MakeInitialState(mp)
 
-    m = 1+np.random.randn(200)*0.01
-    #Create parameter set
-    params={'c':c,
-            'm':m,
-            'w':1,
-            'D':D,
-            'g':1,
-            'l':0.8,
-            'R0':init_state[1][:,0],
-            'tau':1
-           }
+    params=[]
+    for k in range(mp['n_wells']):
+        c, D = MakeMatrices(mp)
+        m = 1+np.random.randn(100)*0.01
+        #Create parameter set
+        params.append({'c':c.copy(),
+                      'm':m,
+                      'w':1,
+                      'D':D.copy(),
+                      'g':1,
+                      'l':0.8,
+                      'R0':init_state[1][:,0],
+                      'tau':1
+                      })
 
     MyPlate_opt = Community(init_state,dynamics,params)
 
