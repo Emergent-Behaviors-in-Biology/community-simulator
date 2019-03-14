@@ -3,11 +3,7 @@ from community_simulator import Community
 from community_simulator.analysis import validate_simulation
 import pandas as pd
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.backends import backend_pdf as bpdf
 import time
-import pickle
 
 folder = '/project/biophys/microbial_crm/data/'
 
