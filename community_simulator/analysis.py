@@ -189,9 +189,9 @@ def validate_simulation(com_in,N0):
     dlogNdt_survive = pd.DataFrame(np.asarray(list(map(com.dNdt,com.N.T.values,com.R.T.values,params_list))).T,
                                    index=com.N.index,columns=com.N.columns)
 
-com.N[N0>0] = 1
-com.N[survive] = 0
-dlogNdt_extinct = pd.DataFrame(np.asarray(list(map(com.dNdt,com.N.T.values,com.R.T.values,params_list))).T,
+    com.N[N0>0] = 1
+    com.N[survive] = 0
+    dlogNdt_extinct = pd.DataFrame(np.asarray(list(map(com.dNdt,com.N.T.values,com.R.T.values,params_list))).T,
                                index=com.N.index,columns=com.N.columns)
 
     accuracy = np.max(abs(dlogNdt_survive))
