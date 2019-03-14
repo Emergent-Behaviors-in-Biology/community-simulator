@@ -17,7 +17,7 @@ mp_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choi
           'MA': 30*np.ones(3), #Number of resources of each type
           'Sgen': 30, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates in Gaussian model
-          'sigc': .01, #Standard deviation in consumption rate in Gaussian model
+          'sigc': 3, #Standard deviation of sum of consumption rates in Gaussian model
           'q': 0.75, #Preference strength (0 for generalist and 1 for specialist)
           'c0':0.01, #Background consumption rate in binary model
           'c1':1., #Specific consumption rate in binary model
@@ -131,7 +131,7 @@ def MakeMatrices(metaparams):
     
     #PERFORM GAUSSIAN SAMPLING
     if metaparams['sampling'] == 'Gaussian':
-        #Sample Gaussian random numbers with standard deviation sigc:
+        #Sample Gaussian random numbers with standard deviation sigc over sqrt M:
         c = pd.DataFrame(np.random.randn(S,M)*metaparams['sigc']/np.sqrt(M),
                      columns=resource_index,index=consumer_index)
         #Add mean values, biasing consumption of each family towards its preferred resource:
