@@ -76,5 +76,5 @@ for M in data_int.index:
     data_opt.loc[M] = validate_simulation(MyPlate_opt,init_state[0])
     data_opt.loc[M,'Run Time']= end_time-start_time
     
-    data_int.to_excel('DirectIntegration_v2.xlsx')
-    data_opt.to_excel('ConvexOptimization_v2.xlsx')
+    data_int.to_excel(folder+'DirectIntegration.xlsx')
+    data_opt.to_excel(folder+'ConvexOptimization.xlsx')
