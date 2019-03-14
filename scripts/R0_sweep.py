@@ -31,11 +31,10 @@ def dRdt(N,R,params):
     return MakeResourceDynamics(mp)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-data_int = pd.DataFrame(index = 10*np.arange(100,dtype=int),
+data_opt = pd.DataFrame(index = 10*np.arange(1,50,dtype=int),
                        columns = ['Run Time','Mean Accuracy','Std. Dev. Accuracy','Failures','Invasions'])
-data_opt = data_int.copy()
 
-for R0 in data_int.index:
+for R0 in data_opt.index:
     mp.update({'MA':100,
                'SA':200,
                'R0_food':R0,
