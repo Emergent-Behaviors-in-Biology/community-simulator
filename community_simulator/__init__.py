@@ -205,7 +205,7 @@ class Community:
             plt.show()
             
             
-    def Propagate(self,T,compress_resources=False):
+    def Propagate(self,T,compress_resources=False,compress_species=True):
         """
         Propagate the state variables forward in time according to dNdt, dRdt.
         
@@ -214,6 +214,12 @@ class Community:
         compress_resources specifies whether zero-abundance resources should be
             ignored during the propagation. This makes sense when the resources
             are non-renewable.
+            
+        compress_species specifies whether zero-abundance species should be
+            ignored during the propagation. This always makes sense for the
+            models we consider. But for user-defined models with new parameter
+            names, it must be turned off, since the package does not know how
+            to compress the parameter matrices properly.
         """
         #CONSTRUCT FULL SYSTEM STATE
         y_in = self.N.append(self.R).values
@@ -225,7 +231,8 @@ class Community:
             well_info = [{'y0':y_in[:,k],'params':self.params} for k in range(self.n_wells)]
         
         #PREPARE INTEGRATOR FOR PARALLEL PROCESSING
-        IntegrateTheseWells = partial(IntegrateWell,self,T=T,compress_resources=compress_resources)
+        IntegrateTheseWells = partial(IntegrateWell,self,T=T,compress_resources=compress_resources,
+                                      compress_species=compress_species)
         
         #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
         if self.parallel:
@@ -297,7 +304,8 @@ class Community:
                         R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
             self.R = pd.DataFrame(R, index = self.R.index, columns = self.R.keys())
         
-    def RunExperiment(self,f,T,np,group='Well',scale=None,refresh_resource=True):
+    def RunExperiment(self,f,T,np,group='Well',scale=None,refresh_resource=True,
+                      compress_resources=False,compress_species=True):
         """
         Repeatedly propagate and passage, simulating a serial transfer experiment.
         
@@ -321,6 +329,16 @@ class Community:
             the same as the initial resource concentrations from the first plate.
             The "Reset" method can be used to adjust these concentrations.
             
+        compress_resources specifies whether zero-abundance resources should be
+            ignored during the propagation. This makes sense when the resources
+            are non-renewable.
+            
+        compress_species specifies whether zero-abundance species should be
+            ignored during the propagation. This always makes sense for the
+            models we consider. But for user-defined models with new parameter
+            names, it must be turned off, since the package does not know how
+            to compress the parameter matrices properly.
+            
         N_traj, R_traj are trajectory DataFrames. They are formed by appending
             the new system state after each propagation, using Pandas multiindex
             functionality to add a time stamp. 
@@ -336,7 +354,7 @@ class Community:
         #PASSAGE, PROPAGATE, RECORD
         for j in range(np):
             self.Passage(f,scale=scale,refresh_resource=refresh_resource)
-            self.Propagate(T)
+            self.Propagate(T,compress_resources=compress_resources,compress_species=compress_species)
             t += T
             N_traj = N_traj.append(TimeStamp(self.N,t,group=group))
             R_traj = R_traj.append(TimeStamp(self.R,t,group=group))
@@ -345,7 +363,7 @@ class Community:
     
     
     def TestWell(self,T = 4,well_name = None,f0 = 1.,ns=100,log_time = False,T0=0,
-                 compress_resources=False,show_plots=True,axs=[]):
+                 compress_resources=False,compress_species=False,show_plots=True,axs=[]):
         """
         Run a single well and plot the trajectory.
         
@@ -380,7 +398,8 @@ class Community:
         
         #INTEGRATE WELL
         t, out = IntegrateWell(self,{'y0':N_well.append(R_well).values,'params':params_well},T=T,ns=ns,T0=T0,
-                               return_all=True,log_time=log_time,compress_resources=compress_resources)
+                               return_all=True,log_time=log_time,compress_resources=compress_resources,
+                               compress_species=compress_species)
         
         Ntraj = out[:,:self.S]
         Rtraj = out[:,self.S:]

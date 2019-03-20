@@ -16,7 +16,8 @@ try:
 except:
     print('cvxpy not installed. Community.SteadyState() not available.')
 
-def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log_time=False,compress_resources=False):
+def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log_time=False,
+                  compress_resources=False,compress_species=True):
     """
         Integrator for Propagate and TestWell methods of the Community class
         """
@@ -34,9 +35,11 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
     S = params_comp['S']
     M = len(y0)-S
     not_extinct = y0>0
-    S_comp = np.sum(not_extinct[:S]) #record the new point dividing species from resources
+    if not compress_species:
+        not_extinct[:S] = True
     if not compress_resources:  #only compress resources if we're running non-renewable dynamics
         not_extinct[S:] = True
+    S_comp = np.sum(not_extinct[:S]) #record the new point dividing species from resources
     not_extinct_idx = np.where(not_extinct)[0]
     y0_comp = y0[not_extinct]
     if 'c' in params_comp.keys():
