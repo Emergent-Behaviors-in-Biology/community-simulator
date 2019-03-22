@@ -71,7 +71,7 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,
+def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-10,
                  alpha=0.5,R0t_0=10,verbose=False,max_iters=1000):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
