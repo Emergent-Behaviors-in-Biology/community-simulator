@@ -71,10 +71,11 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,R0t_0=10,verbose=False,max_iters=1000):
+def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,
+                 alpha=0.5,R0t_0=10,verbose=False,max_iters=1000):
     """
-    Uses convex optimization to find the steady state of the ecological dynamics.
-    """
+        Uses convex optimization to find the steady state of the ecological dynamics.
+        """
     
     #UNPACK INPUT
     y0 = well_info['y0'].copy()
@@ -131,34 +132,36 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
         Rf = np.inf
         Rf_old = 0
         
-
+        
         k=0
         ncyc=0
         Delta = 1
         while np.linalg.norm(Rf_old - Rf) > tol and k < max_iters:
             try:
                 start_time = time.time()
-        
+                
                 wR = cvx.Variable(shape=(M,1)) #weighted resources
-        
+                
                 #Need to multiply by w to get properly weighted KL divergence
-                R0t[R0t<0] = eps
+                R0t = np.sqrt(R0t**2+eps)
                 wR0 = (R0t*w).reshape((M,1))
-
+                
                 #Solve
                 obj = cvx.Minimize(cvx.sum(cvx.kl_div(wR0, wR)))
                 constraints = [G*wR <= h, wR >= 0]
                 prob = cvx.Problem(obj, constraints)
                 prob.solver_stats
                 prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=200)
-
+                
                 #Record the results
                 Rf_old = Rf
                 Nf=constraints[0].dual_value[0:S].reshape(S)
                 Rf=wR.value.reshape(M)/w
-
+                
                 #Update the effective resource concentrations
-                R0t = params_comp['R0'] + Qinv.dot((params_comp['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
+                R0t_new = params_comp['R0'] + Qinv.dot((params_comp['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
+                Delta_R0t = R0t_new-R0t
+                R0t = R0t + alpha*Delta_R0t
                 
                 Delta_old = Delta
                 Delta = np.linalg.norm(Rf_old - Rf)
@@ -186,8 +189,8 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
                 print('Limit cycle detected')
                 k = max_iters
 
-        if k == max_iters:
-            failed = 1
+    if k == max_iters:
+        failed = 1
                           
     elif params_comp['l'] == 0:
         assert replenishment == 'external', 'Replenishment must be external until quadprog is implemented.'
