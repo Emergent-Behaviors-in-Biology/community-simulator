@@ -74,7 +74,8 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,R0t_0=10,verbose=False,max_iters=1000):
+def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,
+                 alpha=0.5,R0t_0=10,verbose=False,max_iters=1000):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
     """
@@ -145,7 +146,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
                 wR = cvx.Variable(shape=(M,1)) #weighted resources
         
                 #Need to multiply by w to get properly weighted KL divergence
-                R0t[R0t<0] = eps
+                R0t = np.sqrt(R0t**2+eps)
                 wR0 = (R0t*w).reshape((M,1))
 
                 #Solve
@@ -161,7 +162,9 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
                 Rf=wR.value.reshape(M)/w
 
                 #Update the effective resource concentrations
-                R0t = params_comp['R0'] + Qinv.dot((params_comp['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
+                R0t_new = params_comp['R0'] + Qinv.dot((params_comp['R0']-Rf)/params_comp['tau'])*(params_comp['tau']/Qinv_aa)
+                Delta_R0t = R0t_new-R0t
+                R0t = R0t + alpha*Delta_R0t
                 
                 Delta_old = Delta
                 Delta = np.linalg.norm(Rf_old - Rf)
@@ -185,7 +188,6 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
             #Check for limit cycle
             if np.isfinite(Delta) and Delta > tol and np.abs(Delta-Delta_old) < 0.1*tol:
                 ncyc+=1
-                #print('R_0 = '+str(Rf[0]))
             if ncyc > 10:
                 print('Limit cycle detected')
                 k = max_iters
