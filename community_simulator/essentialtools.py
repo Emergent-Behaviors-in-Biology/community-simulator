@@ -18,8 +18,8 @@ except:
 
 def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log_time=False,compress_resources=False):
     """
-        Integrator for Propagate and TestWell methods of the Community class
-        """
+    Integrator for Propagate and TestWell methods of the Community class
+    """
     #MAKE LOGARITHMIC TIME AXIS FOR LONG SINGLE RUNS
     if log_time:
         t = 10**(np.linspace(np.log10(T0),np.log10(T0+T),ns))
@@ -74,8 +74,8 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
 def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,
                  alpha=0.5,R0t_0=10,verbose=False,max_iters=1000):
     """
-        Uses convex optimization to find the steady state of the ecological dynamics.
-        """
+    Uses convex optimization to find the steady state of the ecological dynamics.
+    """
     
     #UNPACK INPUT
     y0 = well_info['y0'].copy()
