@@ -8,9 +8,6 @@ Created on Thu Oct 19 11:09:38 2017
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-from matplotlib.backends import backend_pdf as bpdf
 
 def NonzeroColumns(data,thresh=0):
     return data.keys()[np.where(np.sum(data)>thresh)]
@@ -49,13 +46,13 @@ def StackPlot(df,ax=None,labels=False,title=None,drop_zero=True,unique_color=Fal
     
     return ax
 
-def PlotTraj(traj_in, dropzeros = False, plottype = 'stack', demechoice = None,
+def PlotTraj(traj_in, dropzeros = False, plottype = 'stack', wellchoice = None,
              figsize = (10,20)):
     traj = traj_in.copy()
-    if demechoice!= None:
-        for item in demechoice:
-            assert item in traj.index.levels[-1], "demechoice must be a list of deme labels"
-        traj = traj.reindex(demechoice,level=1)
+    if wellchoice!= None:
+        for item in wellchoice:
+            assert item in traj.index.levels[-1], "wellchoice must be a list of well labels"
+        traj = traj.reindex(wellchoice,level=1)
         
     group = traj.index.names[-1]
     nplots = len(traj.index.levels[-1])
