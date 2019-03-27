@@ -31,7 +31,7 @@ def dRdt(N,R,params):
     return MakeResourceDynamics(mp)(N,R,params)
 dynamics = [dNdt,dRdt]
 
-data_opt = pd.DataFrame(index = 10*np.arange(1,30,dtype=int),
+data_opt = pd.DataFrame(index = np.arange(10,40,dtype=int),
                        columns = ['Run Time','Mean Accuracy','Std. Dev. Accuracy','Failures','Invasions'])
 
 for R0 in data_opt.index:
@@ -65,5 +65,6 @@ for R0 in data_opt.index:
     MyPlate_opt.N[MyPlate_opt.N<1e-4] = 0
     data_opt.loc[R0] = validate_simulation(MyPlate_opt,init_state[0])
     data_opt.loc[R0,'Run Time']= end_time-start_time
+    data_opt.loc[R0,'Richness']= np.mean((MyPlate_opt.N>0).sum().values)
     
     data_opt.to_excel(folder+'ConvexOptimization_R0_sweep.xlsx')
