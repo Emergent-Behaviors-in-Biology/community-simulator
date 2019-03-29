@@ -12,32 +12,32 @@ from numpy.random import dirichlet
 import numbers
 
 #DEFAULT PARAMETERS FOR CONSUMER AND METABOLIC MATRICES, AND INITIAL STATE
-mp_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
+a_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
           'SA': 60*np.ones(3), #Number of species in each family
           'MA': 30*np.ones(3), #Number of resources of each type
           'Sgen': 30, #Number of generalist species
-          'muc': 10, #Mean sum of consumption rates in Gaussian model
-          'sigc': 3, #Standard deviation of sum of consumption rates in Gaussian model
+          'muc': 10, #Mean sum of consumption rates
+          'sigc': 3, #Standard deviation of sum of consumption rates for Gaussian and Gamma models
           'q': 0.75, #Preference strength (0 for generalist and 1 for specialist)
-          'c0':0.01, #Background consumption rate in binary model
+          'c0':0.01, #Sum of background consumption rates in binary model
           'c1':1., #Specific consumption rate in binary model
           'fs':0.3, #Fraction of secretion flux with same resource type
           'fw':0.6, #Fraction of secretion flux to 'waste' resource
-          'D_diversity':0.2, #Variability in secretion fluxes among resources (must be less than 1)
+          'sparsity':0.2, #Effective sparsity of metabolic matrix
           'n_wells':10, #Number of independent wells
           'S':100, #Number of species per well
           'food':0, #index of food source
           'R0_food':1000, #unperturbed fixed point for supplied food
           'regulation':'independent', #metabolic regulation (see dRdt)
           'response':'type I', #functional response (see dRdt)
-          'replenishment':'off' #resource replenishment (see dRdt)
+          'supply':'off' #resource supply (see dRdt)
          }
 
-def MakeInitialState(metaparams):
+def MakeInitialState(assumptions):
     """
     Construct stochastically colonized initial state, at unperturbed resource fixed point.
     
-    metaparams = dictionary of metaparameters
+    assumptions = dictionary of metaparameters
         'SA' = number of species in each family
         'MA' = number of resources of each type
         'Sgen' = number of generalist species
@@ -51,34 +51,62 @@ def MakeInitialState(metaparams):
     R0 = initial resource concentrations
     """
 
-    M = int(np.sum(metaparams['MA']))
-    S_tot = int(np.sum(metaparams['SA']))+metaparams['Sgen']
-    R0 = np.zeros((M,metaparams['n_wells']))
-    N0 = np.zeros((S_tot,metaparams['n_wells']))
+    #PREPARE VARIABLES
+    #Force number of species to be an array:
+    if isinstance(assumptions['MA'],numbers.Number):
+        assumptions['MA'] = [assumptions['MA']]
+    if isinstance(assumptions['SA'],numbers.Number):
+        assumptions['SA'] = [assumptions['SA']]
+    #Force numbers of species to be integers:
+    assumptions['MA'] = np.asarray(assumptions['MA'],dtype=int)
+    assumptions['SA'] = np.asarray(assumptions['SA'],dtype=int)
+    assumptions['Sgen'] = int(assumptions['Sgen'])
+
+    #Extract total numbers of resources, consumers, resource types, and consumer families:
+    M = int(np.sum(assumptions['MA']))
+    T = len(assumptions['MA'])
+    S_tot = int(np.sum(assumptions['SA'])+assumptions['Sgen'])
+    F = len(assumptions['SA'])
+    #Construct lists of names of resources, consumers, resource types, consumer families and wells:
+    resource_names = ['R'+str(k) for k in range(M)]
+    type_names = ['T'+str(k) for k in range(T)]
+    family_names = ['F'+str(k) for k in range(F)]
+    consumer_names = ['S'+str(k) for k in range(S_tot)]
+    resource_index = [[type_names[m] for m in range(T) for k in range(assumptions['MA'][m])],
+                      resource_names]
+    consumer_index = [[family_names[m] for m in range(F) for k in range(assumptions['SA'][m])]
+                      +['GEN' for k in range(assumptions['Sgen'])],consumer_names]
+    well_names = ['W'+str(k) for k in range(assumptions['n_wells'])]
+
+    R0 = np.zeros((M,assumptions['n_wells']))
+    N0 = np.zeros((S_tot,assumptions['n_wells']))
     
-    if not isinstance(metaparams['food'],int):
-        assert len(metaparams['food']) == metaparams['n_wells'], 'Length of food vector must equal n_wells.'
-        food_list = metaparams['food']
+    if not isinstance(assumptions['food'],int):
+        assert len(assumptions['food']) == assumptions['n_wells'], 'Length of food vector must equal n_wells.'
+        food_list = assumptions['food']
     else:
-        food_list = np.ones(metaparams['n_wells'],dtype=int)*metaparams['food']
+        food_list = np.ones(assumptions['n_wells'],dtype=int)*assumptions['food']
 
-    if not isinstance(metaparams['R0_food'],int):
-        assert len(metaparams['R0_food']) == metaparams['n_wells'], 'Length of food vector must equal n_wells.'
-        R0_food_list = metaparams['R0_food']
+    if not isinstance(assumptions['R0_food'],int):
+        assert len(assumptions['R0_food']) == assumptions['n_wells'], 'Length of food vector must equal n_wells.'
+        R0_food_list = assumptions['R0_food']
     else:
-        R0_food_list = np.ones(metaparams['n_wells'],dtype=int)*metaparams['R0_food']
+        R0_food_list = np.ones(assumptions['n_wells'],dtype=int)*assumptions['R0_food']
 
-    for k in range(metaparams['n_wells']):
-        N0[np.random.choice(S_tot,size=metaparams['S'],replace=False),k]=1.
+    for k in range(assumptions['n_wells']):
+        N0[np.random.choice(S_tot,size=assumptions['S'],replace=False),k]=1.
         R0[food_list[k],k] = R0_food_list[k]
-    
+
+    N0 = pd.DataFrame(N0,index=consumer_index,columns=well_names)
+    R0 = pd.DataFrame(R0,index=resource_index,columns=well_names)
+
     return N0, R0
 
-def MakeMatrices(metaparams):
+def MakeMatrices(assumptions):
     """
     Construct consumer matrix and metabolic matrix.
     
-    metaparams = dictionary of metaparameters
+    assumptions = dictionary of metaparameters
         'sampling' = {'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
         'SA' = number of species in each family
         'MA' = number of resources of each type
@@ -86,11 +114,11 @@ def MakeMatrices(metaparams):
         'muc' = mean sum of consumption rates
         'sigc' = standard deviation for Gaussian sampling of consumer matrix
         'q' = family preference strength (from 0 to 1)
-        'c0' = background consumption rate for Binary sampling
+        'c0' = row sum of background consumption rates for Binary sampling
         'c1' = specific consumption rate for Binary sampling
         'fs' = fraction of secretion flux into same resource type
         'fw' = fraction of secretion flux into waste resource type
-        'D_diversity' = variability in secretion fluxes among resources (from 0 to 1)
+        'sparsity' = effective sparsity of metabolic matrix (from 0 to 1)
         'wate_type' = index of resource type to designate as "waste"
     
     Returns:
@@ -99,92 +127,98 @@ def MakeMatrices(metaparams):
     """
     #PREPARE VARIABLES
     #Force number of species to be an array:
-    if isinstance(metaparams['MA'],numbers.Number):
-        metaparams['MA'] = [metaparams['MA']]
-    if isinstance(metaparams['SA'],numbers.Number):
-        metaparams['SA'] = [metaparams['SA']]
+    if isinstance(assumptions['MA'],numbers.Number):
+        assumptions['MA'] = [assumptions['MA']]
+    if isinstance(assumptions['SA'],numbers.Number):
+        assumptions['SA'] = [assumptions['SA']]
     #Force numbers of species to be integers:
-    metaparams['MA'] = np.asarray(metaparams['MA'],dtype=int)
-    metaparams['SA'] = np.asarray(metaparams['SA'],dtype=int)
-    metaparams['Sgen'] = int(metaparams['Sgen'])
+    assumptions['MA'] = np.asarray(assumptions['MA'],dtype=int)
+    assumptions['SA'] = np.asarray(assumptions['SA'],dtype=int)
+    assumptions['Sgen'] = int(assumptions['Sgen'])
     #Default waste type is last type in list:
-    if 'waste_type' not in metaparams.keys():
-        metaparams['waste_type']=len(metaparams['MA'])-1
+    if 'waste_type' not in assumptions.keys():
+        assumptions['waste_type']=len(assumptions['MA'])-1
 
     #Extract total numbers of resources, consumers, resource types, and consumer families:
-    M = np.sum(metaparams['MA'])
-    T = len(metaparams['MA'])
-    S = np.sum(metaparams['SA'])+metaparams['Sgen']
-    F = len(metaparams['SA'])
-    M_waste = metaparams['MA'][metaparams['waste_type']]
+    M = np.sum(assumptions['MA'])
+    T = len(assumptions['MA'])
+    S = np.sum(assumptions['SA'])+assumptions['Sgen']
+    F = len(assumptions['SA'])
+    M_waste = assumptions['MA'][assumptions['waste_type']]
     #Construct lists of names of resources, consumers, resource types, and consumer families:
     resource_names = ['R'+str(k) for k in range(M)]
     type_names = ['T'+str(k) for k in range(T)]
     family_names = ['F'+str(k) for k in range(F)]
     consumer_names = ['S'+str(k) for k in range(S)]
-    waste_name = type_names[metaparams['waste_type']]
-    resource_index = [[type_names[m] for m in range(T) for k in range(metaparams['MA'][m])],
+    waste_name = type_names[assumptions['waste_type']]
+    resource_index = [[type_names[m] for m in range(T) for k in range(assumptions['MA'][m])],
                       resource_names]
-    consumer_index = [[family_names[m] for m in range(F) for k in range(metaparams['SA'][m])]
-                      +['GEN' for k in range(metaparams['Sgen'])],consumer_names]
-    
+    consumer_index = [[family_names[m] for m in range(F) for k in range(assumptions['SA'][m])]
+                      +['GEN' for k in range(assumptions['Sgen'])],consumer_names]
     
     #PERFORM GAUSSIAN SAMPLING
-    if metaparams['sampling'] == 'Gaussian':
-        #Sample Gaussian random numbers with standard deviation sigc over sqrt M:
-        c = pd.DataFrame(np.random.randn(S,M)*metaparams['sigc']/np.sqrt(M),
-                     columns=resource_index,index=consumer_index)
-        #Add mean values, biasing consumption of each family towards its preferred resource:
+    if assumptions['sampling'] == 'Gaussian':
+        #Initialize dataframe:
+        c = pd.DataFrame(np.zeros((S,M)),columns=resource_index,index=consumer_index)
+        #Add Gaussian-sampled values, biasing consumption of each family towards its preferred resource:
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (metaparams['muc']/M)*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
+                    c_mean = (assumptions['muc']/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
+                    c_var = (assumptions['sigc']**2/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
                 else:
-                    c.loc['F'+str(k)]['T'+str(j)] = c.loc['F'+str(k)]['T'+str(j)].values + (metaparams['muc']/M)*(1-metaparams['q'])
+                    c_mean = (assumptions['muc']/M)*(1-assumptions['q'])
+                    c_var = (assumptions['sigc']**2/M)*(1-assumptions['q'])
+                c.loc['F'+str(k)]['T'+str(j)] = c_mean + np.random.randn(assumptions['SA'][k],assumptions['MA'][j])*np.sqrt(c_var)
         if 'GEN' in c.index:
-            c.loc['GEN'] = c.loc['GEN'].values + (metaparams['muc']/M)
+            c_mean = assumptions['muc']/M
+            c_var = assumptions['sigc']**2/M
+            c.loc['GEN'] = c_mean + np.random.randn(assumptions['Sgen'],M)*np.sqrt(c_var)
                     
     #PERFORM BINARY SAMPLING
-    elif metaparams['sampling'] == 'Binary':
-        assert metaparams['muc'] < M*metaparams['c1'], 'muc not attainable with given M and c1.'
-        #Construct uniform matrix at background consumption rate c0:
-        c = pd.DataFrame(np.ones((S,M))*metaparams['c0'],columns=resource_index,index=consumer_index)
+    elif assumptions['sampling'] == 'Binary':
+        assert assumptions['muc'] < M*assumptions['c1'], 'muc not attainable with given M and c1.'
+        #Construct uniform matrix at total background consumption rate c0:
+        c = pd.DataFrame(np.ones((S,M))*assumptions['c0']/M,columns=resource_index,index=consumer_index)
         #Sample binary random matrix blocks for each pair of family/resource type:
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    p = (metaparams['muc']/(M*metaparams['c1']))*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
+                    p = (assumptions['muc']/(M*assumptions['c1']))*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
                 else:
-                    p = (metaparams['muc']/(M*metaparams['c1']))*(1-metaparams['q'])
+                    p = (assumptions['muc']/(M*assumptions['c1']))*(1-assumptions['q'])
                     
                 c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
-                                                + metaparams['c1']*BinaryRandomMatrix(metaparams['SA'][k],metaparams['MA'][j],p))
+                                                + assumptions['c1']*BinaryRandomMatrix(assumptions['SA'][k],assumptions['MA'][j],p))
         #Sample uniform binary random matrix for generalists:
         if 'GEN' in c.index:
-            p = metaparams['muc']/(M*metaparams['c1'])
-            c.loc['GEN'] = c.loc['GEN'].values + metaparams['c1']*BinaryRandomMatrix(metaparams['Sgen'],M,p)
-    elif metaparams['sampling'] == 'Gamma':
-        #Initialize empty dataframe
-        c = pd.DataFrame(np.zeros((S,M)),columns=resource_index,index=consumer_index)
+            p = assumptions['muc']/(M*assumptions['c1'])
+            c.loc['GEN'] = c.loc['GEN'].values + assumptions['c1']*BinaryRandomMatrix(assumptions['Sgen'],M,p)
 
+    elif assumptions['sampling'] == 'Gamma':
+        #Initialize dataframe
+        c = pd.DataFrame(np.zeros((S,M)),columns=resource_index,index=consumer_index)
         #Add Gamma-sampled values, biasing consumption of each family towards its preferred resource
         for k in range(F):
             for j in range(T):
                 if k==j:
-                    c_mean = (metaparams['muc']/M)*(1+metaparams['q']*(M-metaparams['MA'][j])/metaparams['MA'][j])
-                    thetac = metaparams['sigc']**2*1./(M*c_mean)
-                    kc = M*c_mean**2*1./(metaparams['sigc']**2)
-                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(metaparams['SA'][k],metaparams['MA'][j]))
+                    c_mean = (assumptions['muc']/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
+                    c_var = (assumptions['sigc']**2/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
+                    thetac = c_var/c_mean
+                    kc = c_mean**2/c_var
+                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(assumptions['SA'][k],assumptions['MA'][j]))
                 else:
-                    c_mean = (metaparams['muc']/M)*(1-metaparams['q'])
-                    thetac = metaparams['sigc']**2*1./(M*c_mean)
-                    kc = M*c_mean**2*1./(metaparams['sigc']**2)
-                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(metaparams['SA'][k],metaparams['MA'][j]))
+                    c_mean = (assumptions['muc']/M)*(1-assumptions['q'])
+                    c_var = (assumptions['sigc']**2/M)*(1-assumptions['q'])
+                    thetac = c_var/c_mean
+                    kc = c_mean**2/c_var
+                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(assumptions['SA'][k],assumptions['MA'][j]))
         if 'GEN' in c.index:
-            c_mean = metaparams['muc']/M
-            thetac = metaparams['sigc']**2*1./(M*c_mean)
-            kc = M*c_mean**2*1./(metaparams['sigc']**2)
-            c.loc['GEN'] = np.random.gamma(kc,scale=thetac,size=(metaparams['Sgen'],M))
+            c_mean = assumptions['muc']/M
+            c_var = assumptions['sigc']**2/M
+            thetac = c_var/c_mean
+            kc = c_mean**2/c_var
+            c.loc['GEN'] = np.random.gamma(kc,scale=thetac,size=(assumptions['Sgen'],M))
     
     else:
         print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
@@ -196,50 +230,29 @@ def MakeMatrices(metaparams):
         MA = len(DT.loc[type_name])
         if type_name is not waste_name:
             #Set background secretion levels
-            p = pd.Series(np.ones(M)*(1-metaparams['fs']-metaparams['fw'])/(M-MA-M_waste),index = DT.keys())
+            p = pd.Series(np.ones(M)*(1-assumptions['fs']-assumptions['fw'])/(M-MA-M_waste),index = DT.keys())
             #Set self-secretion level
-            p.loc[type_name] = metaparams['fs']/MA
+            p.loc[type_name] = assumptions['fs']/MA
             #Set waste secretion level
-            p.loc[waste_name] = metaparams['fw']/M_waste
+            p.loc[waste_name] = assumptions['fw']/M_waste
             #Sample from dirichlet
-            DT.loc[type_name] = dirichlet(p/metaparams['D_diversity'],size=MA)
+            DT.loc[type_name] = dirichlet(p/assumptions['sparsity'],size=MA)
         else:
             if M > MA:
                 #Set background secretion levels
-                p = pd.Series(np.ones(M)*(1-metaparams['fw']-metaparams['fs'])/(M-MA),index = DT.keys())
+                p = pd.Series(np.ones(M)*(1-assumptions['fw']-assumptions['fs'])/(M-MA),index = DT.keys())
                 #Set self-secretion level
-                p.loc[type_name] = (metaparams['fw']+metaparams['fs'])/MA
+                p.loc[type_name] = (assumptions['fw']+assumptions['fs'])/MA
             else:
                 p = pd.Series(np.ones(M)/M,index = DT.keys())
             #Sample from dirichlet
-            DT.loc[type_name] = dirichlet(p/metaparams['D_diversity'],size=MA)
+            DT.loc[type_name] = dirichlet(p/assumptions['sparsity'],size=MA)
         
     return c, DT.T
 
-def AddLabels(N0_values,R0_values,c):
+def MakeResourceDynamics(assumptions):
     """
-    Apply labels from consumer matrix to state variables.
-    
-    c = consumer matrix (as Pandas Data Frame)
-    
-    N0_values, R0_values = 2D arrays of initial consumer and resource concentrations
-    
-    Returns:
-    N0, R0 = Pandas Data Frames with consumer and resource labels from c.
-    """
-    
-    assert type(c) == pd.DataFrame, 'Consumer matrix must be a Data Frame.'
-    
-    n_wells = np.shape(N0_values)[1]
-    well_names = ['W'+str(k) for k in range(n_wells)]
-    N0 = pd.DataFrame(N0_values,columns=well_names,index=c.index)
-    R0 = pd.DataFrame(R0_values,columns=well_names,index=c.keys())
-    
-    return N0, R0
-
-def MakeResourceDynamics(metaparams):
-    """
-    Construct resource dynamics. 'metaparams' must be a dictionary containing at least
+    Construct resource dynamics. 'assumptions' must be a dictionary containing at least
     three entries:
     
     response = {'type I', 'type II', 'type III'} specifies nonlinearity of growth law
@@ -248,7 +261,7 @@ def MakeResourceDynamics(metaparams):
         rates to favor the most abundant accessible resources (measured either by
         energy or mass)
     
-    replenishment = {'off','external','self-renewing'} sets choice of
+    supply = {'off','external','self-renewing'} sets choice of
         intrinsic resource dynamics
         
     Returns a function of N, R, and the model parameters, which itself returns the
@@ -270,17 +283,17 @@ def MakeResourceDynamics(metaparams):
          'self-renewing': lambda R,params: params['r']*R*(params['R0']-R)
     }
     
-    J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
-                             *params['w']*sigma[metaparams['response']](R,params))
+    J_in = lambda R,params: (u[assumptions['regulation']](params['c']*R,params)
+                             *params['w']*sigma[assumptions['response']](R,params))
     J_out = lambda R,params: (params['l']*J_in(R,params)).dot(params['D'].T)
     
-    return lambda N,R,params: (h[metaparams['replenishment']](R,params)
+    return lambda N,R,params: (h[assumptions['supply']](R,params)
                                -(J_in(R,params)/params['w']).T.dot(N)
                                +(J_out(R,params)/params['w']).T.dot(N))
 
-def MakeConsumerDynamics(metaparams):
+def MakeConsumerDynamics(assumptions):
     """
-    Construct resource dynamics. 'metaparams' must be a dictionary containing at least
+    Construct resource dynamics. 'assumptions' must be a dictionary containing at least
     three entries:
     
     response = {'type I', 'type II', 'type III'} specifies nonlinearity of growth law
@@ -289,7 +302,7 @@ def MakeConsumerDynamics(metaparams):
         rates to favor the most abundant accessible resources (measured either by
         energy or mass)
     
-    replenishment = {'off','external','self-renewing','predator'} sets choice of 
+    supply = {'off','external','self-renewing','predator'} sets choice of
         intrinsic resource dynamics
         
     Returns a function of N, R, and the model parameters, which itself returns the
@@ -306,8 +319,8 @@ def MakeConsumerDynamics(metaparams):
          'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
         }
     
-    J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
-                             *params['w']*sigma[metaparams['response']](R,params))
+    J_in = lambda R,params: (u[assumptions['regulation']](params['c']*R,params)
+                             *params['w']*sigma[assumptions['response']](R,params))
     J_growth = lambda R,params: (1-params['l'])*J_in(R,params)
     
     return lambda N,R,params: params['g']*N*(np.sum(J_growth(R,params),axis=1)-params['m'])
