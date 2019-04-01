@@ -110,7 +110,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
     M = len(params_comp['c'].T)
 
     failed = 0
-    if params_comp['l'] is not 0:
+    if params_comp['l'] != 0:
         assert replenishment == 'external', 'Replenishment must be external for crossfeeding dynamics.'
         
         #Make Q matrix and effective weight vector
@@ -139,6 +139,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
         k=0
         ncyc=0
         Delta = 1
+        Delta_old = 1
         while np.linalg.norm(Rf_old - Rf) > tol and k < max_iters:
             try:
                 start_time = time.time()
@@ -154,7 +155,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
                 constraints = [G*wR <= h, wR >= 0]
                 prob = cvx.Problem(obj, constraints)
                 prob.solver_stats
-                prob.solve(solver=cvx.ECOS,abstol=0.1*tol,reltol=0.1*tol,warm_start=True,verbose=False,max_iters=200)
+                prob.solve(solver=cvx.ECOS,abstol=1e-10,reltol=1e-10,warm_start=True,verbose=False,max_iters=1000)
 
                 #Record the results
                 Rf_old = Rf
@@ -207,14 +208,14 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
         wR = cvx.Variable(shape=(M,1)) #weighted resources
         
         #Need to multiply by w to get properly weighted KL divergence
-        wR0 = (params_comp['R0']*params_comp['w']/params_comp['tau']).reshape((M,1))
+        wR0 = (params_comp['R0']*params_comp['w']*np.ones(M)/params_comp['tau']).reshape((M,1))
 
         #Solve
         obj = cvx.Minimize(cvx.sum(cvx.kl_div(wR0, wR)))
         constraints = [G*wR <= h]
         prob = cvx.Problem(obj, constraints)
         prob.solver_stats
-        prob.solve(solver=cvx.ECOS,abstol=tol,reltol=tol,warm_start=True,verbose=False,max_iters=200)
+        prob.solve(solver=cvx.ECOS,abstol=1e-10,reltol=1e-10,warm_start=True,verbose=False,max_iters=1000)
 
         #Record the results
         Nf=constraints[0].dual_value[0:S].reshape(S)
