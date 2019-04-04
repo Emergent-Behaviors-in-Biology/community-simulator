@@ -18,11 +18,11 @@ a_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choic
           'Sgen': 30, #Number of generalist species
           'muc': 10, #Mean sum of consumption rates
           'sigc': 3, #Standard deviation of sum of consumption rates for Gaussian and Gamma models
-          'q': 0.75, #Preference strength (0 for generalist and 1 for specialist)
-          'c0':0.01, #Sum of background consumption rates in binary model
+          'q': 0.0, #Preference strength (0 for generalist and 1 for specialist)
+          'c0':0.0, #Sum of background consumption rates in binary model
           'c1':1., #Specific consumption rate in binary model
-          'fs':0.3, #Fraction of secretion flux with same resource type
-          'fw':0.6, #Fraction of secretion flux to 'waste' resource
+          'fs':0.45, #Fraction of secretion flux with same resource type
+          'fw':0.45, #Fraction of secretion flux to 'waste' resource
           'sparsity':0.2, #Effective sparsity of metabolic matrix
           'n_wells':10, #Number of independent wells
           'S':100, #Number of species per well
@@ -249,6 +249,56 @@ def MakeMatrices(assumptions):
             DT.loc[type_name] = dirichlet(p/assumptions['sparsity'],size=MA)
         
     return c, DT.T
+
+def MakeParams(assumptions):
+    """
+    Makes a dictionary of parameters, using MakeMatrices for the matrices, MakeInitialState
+    for the resource supply point, and setting everything else to 1, except l which is zero.
+    
+    Parameter values can be modified from 1 (or zero for l) by adding their name-value pairs
+    to the assumptions dictionary.
+    """
+
+    c, D = MakeMatrices(assumptions)
+    N0,R0 = MakeInitialState(assumptions)
+    
+    if not isinstance(assumptions['food'],int) or not isinstance(assumptions['R0_food'],int):
+        params=[{'c':c,
+                'm':1,
+                'w':1,
+                'D':D,
+                'g':1,
+                'l':0,
+                'R0':R0.values[:,k],
+                'tau':1,
+                'r':1,
+                'sigma_max':1,
+                'nreg':1
+                } for k in range(assumptions['n_wells'])]
+        for item in ['m','w','g','l','tau','r','sigma_max','n','nreg']:
+            if item in assumptions.keys():
+                for k in range(assumptions['n_wells']):
+                    params[k][item] = assumptions[item]
+
+    else:
+        params={'c':c,
+                'm':1,
+                'w':1,
+                'D':D,
+                'g':1,
+                'l':0,
+                'R0':R0.values[:,0],
+                'tau':1,
+                'r':1,
+                'sigma_max':1,
+                'nreg':1
+                }
+            
+        for item in ['m','w','g','l','tau','r','sigma_max','n','nreg']:
+            if item in assumptions.keys():
+                params[item] = assumptions[item]
+
+    return params
 
 def MakeResourceDynamics(assumptions):
     """
