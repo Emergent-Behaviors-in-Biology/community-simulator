@@ -273,7 +273,8 @@ def MakeParams(assumptions):
                 'tau':1,
                 'r':1,
                 'sigma_max':1,
-                'nreg':1
+                'nreg':10,
+                'n':2
                 } for k in range(assumptions['n_wells'])]
         for item in ['m','w','g','l','tau','r','sigma_max','n','nreg']:
             if item in assumptions.keys():
@@ -291,7 +292,8 @@ def MakeParams(assumptions):
                 'tau':1,
                 'r':1,
                 'sigma_max':1,
-                'nreg':1
+                'nreg':10,
+                'n':2
                 }
             
         for item in ['m','w','g','l','tau','r','sigma_max','n','nreg']:
