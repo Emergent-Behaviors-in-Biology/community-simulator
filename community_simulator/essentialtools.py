@@ -239,15 +239,17 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             
             #Make constraints
             G = params_comp['c']*params_comp['w']
+            G = np.vstack((G,-np.eye(M)))
+            h = np.hstack((h,np.zeros(M)))
 
             #Solve
             obj = cvx.Minimize(cvx.quad_form(R0-R_opt,np.diag(np.sqrt(w*r))))
-            constraints = [G*R_opt <= h]
+            constraints = [G@R_opt <= h]
             prob = cvx.Problem(obj, constraints)
-            prob.solve()
+            prob.solve(solver=cvx.OSQP,eps_abs=1e-6,eps_prim_inf=1e-6,eps_dual_inf=1e-6,polish=True,max_iter=int(1e6),time_limit=0)
         
             #Record the results
-            Nf=constraints[0].dual_value
+            Nf=constraints[0].dual_value[:S]
             Rf=R_opt.value
         elif supply == 'predator':
             #Format constants and variables
@@ -266,15 +268,17 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             
             #Make constraints
             G = params_comp['c']*params_comp['w']
+            G = np.vstack((G,-np.eye(M)))
+            h = np.hstack((h,np.zeros(M)))
             
             #Solve
             obj = cvx.Minimize((1/2)*cvx.quad_form(R0-R_opt,np.diag(np.sqrt(w*r)))+u.T@R_opt)
-            constraints = [G*R_opt <= h]
+            constraints = [G@R_opt <= h]
             prob = cvx.Problem(obj, constraints)
-            prob.solve()
+            prob.solve(solver=cvx.OSQP,eps_abs=1e-10)
             
             #Record the results
-            Nf=constraints[0].dual_value
+            Nf=constraints[0].dual_value[:S]
             Rf=R_opt.value
         else:
             print('supply must be external or self-renewing')
