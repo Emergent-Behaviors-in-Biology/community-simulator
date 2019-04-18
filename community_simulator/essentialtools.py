@@ -230,21 +230,52 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
                 w = params_comp['w']
             else:
                 w = np.ones(M)*params_comp['w']
+            if isinstance(params_comp['r'],np.ndarray):
+                r = params_comp['r']
+            else:
+                r = np.ones(M)*params_comp['r']
             R0 = params_comp['R0']
-            R = cvx.Variable(M)
+            R_opt = cvx.Variable(M)
             
             #Make constraints
             G = params_comp['c']*params_comp['w']
 
             #Solve
-            obj = cvx.Minimize(quad_form(R0-R,np.eye(M)))
-            constraints = [G*R <= h]
+            obj = cvx.Minimize(cvx.quad_form(R0-R_opt,np.diag(np.sqrt(w*r))))
+            constraints = [G*R_opt <= h]
             prob = cvx.Problem(obj, constraints)
             prob.solve()
         
             #Record the results
             Nf=constraints[0].dual_value
-            Rf=R.value
+            Rf=R_opt.value
+        elif supply == 'predator':
+            #Format constants and variables
+            if isinstance(params_comp['m'],np.ndarray):
+                h = params_comp['m']
+            else:
+                h = np.ones(S)*params_comp['m']
+            if isinstance(params_comp['w'],np.ndarray):
+                w = params_comp['w']
+            else:
+                w = np.ones(M)*params_comp['w']
+            r = params_comp['r']
+            u = params_comp['u']
+            R0 = params_comp['R0']
+            R_opt = cvx.Variable(M)
+            
+            #Make constraints
+            G = params_comp['c']*params_comp['w']
+            
+            #Solve
+            obj = cvx.Minimize((1/2)*cvx.quad_form(R0-R_opt,np.diag(np.sqrt(w*r)))+u.T@R_opt)
+            constraints = [G*R_opt <= h]
+            prob = cvx.Problem(obj, constraints)
+            prob.solve()
+            
+            #Record the results
+            Nf=constraints[0].dual_value
+            Rf=R_opt.value
         else:
             print('supply must be external or self-renewing')
             failed = True

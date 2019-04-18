@@ -332,7 +332,8 @@ def MakeResourceDynamics(assumptions):
     
     h = {'off': lambda R,params: 0.,
          'external': lambda R,params: (params['R0']-R)/params['tau'],
-         'self-renewing': lambda R,params: params['r']*R*(params['R0']-R)
+         'self-renewing': lambda R,params: params['r']*R*(params['R0']-R),
+         'predator': lambda R,params: params['r']*R*(params['R0']-R)-params['u']*R
     }
     
     J_in = lambda R,params: (u[assumptions['regulation']](params['c']*R,params)
