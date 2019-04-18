@@ -74,7 +74,7 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         yf[not_extinct_idx] = out
         return yf
     
-def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e-20,
+def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
                  alpha=0.5,R0t_0=10,verbose=False,max_iters=1000):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
@@ -88,7 +88,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
     
     #COMPRESS PARAMETERS TO GET RID OF EXTINCT SPECIES
     not_extinct_consumers = N>0
-    if replenishment=='external':
+    if supply=='external':
         not_extinct_resources = np.ones(len(R),dtype=bool)
     else:
         not_extinct_resources = R>0
@@ -111,7 +111,7 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
 
     failed = 0
     if params_comp['l'] != 0:
-        assert replenishment == 'external', 'Replenishment must be external for crossfeeding dynamics.'
+        assert supply == 'external', 'Replenishment must be external for crossfeeding dynamics.'
         
         #Make Q matrix and effective weight vector
         w_mat = np.kron(np.ones((M,1)),np.ones((1,M))*params_comp['w'])
@@ -197,31 +197,57 @@ def OptimizeWell(well_info,replenishment='external',tol=1e-7,shift_size=1,eps=1e
             failed = 1
                           
     elif params_comp['l'] == 0:
-        assert replenishment == 'external', 'Replenishment must be external until quadprog is implemented.'
+        if supply == 'external':
+            G = params_comp['c']*params_comp['tau'] #Multiply by tau, because wR has tau in the denominator
+            if isinstance(params_comp['m'],np.ndarray):
+                h = params_comp['m'].reshape((S,1))
+            else:
+                h = np.ones((S,1))*params_comp['m']
+
+            wR = cvx.Variable(shape=(M,1)) #weighted resources
         
-        G = params_comp['c']*params_comp['tau'] #Multiply by tau, because wR has tau in the denominator
-        if isinstance(params_comp['m'],np.ndarray):
-            h = params_comp['m'].reshape((S,1))
+            #Need to multiply by w to get properly weighted KL divergence
+            wR0 = (params_comp['R0']*params_comp['w']*np.ones(M)/params_comp['tau']).reshape((M,1))
+
+            #Solve
+            obj = cvx.Minimize(cvx.sum(cvx.kl_div(wR0, wR)))
+            constraints = [G*wR <= h]
+            prob = cvx.Problem(obj, constraints)
+            prob.solver_stats
+            prob.solve(solver=cvx.ECOS,abstol=1e-10,reltol=1e-10,warm_start=True,verbose=False,max_iters=1000)
+
+            #Record the results
+            Nf=constraints[0].dual_value[0:S].reshape(S)
+            Rf=wR.value.reshape(M)*params_comp['tau']/params_comp['w']
+    
+        elif supply == 'self-renewing':
+            #Format constants and variables
+            if isinstance(params_comp['m'],np.ndarray):
+                h = params_comp['m']
+            else:
+                h = np.ones(S)*params_comp['m']
+            if isinstance(params_comp['w'],np.ndarray):
+                w = params_comp['w']
+            else:
+                w = np.ones(M)*params_comp['w']
+            R0 = params_comp['R0']
+            R = cvx.Variable(M)
+            
+            #Make constraints
+            G = params_comp['c']*params_comp['w']
+
+            #Solve
+            obj = cvx.Minimize(quad_form(R0-R,np.eye(M)))
+            constraints = [G*R <= h]
+            prob = cvx.Problem(obj, constraints)
+            prob.solve()
+        
+            #Record the results
+            Nf=constraints[0].dual_value
+            Rf=R.value
         else:
-            h = np.ones((S,1))*params_comp['m']
-
-        wR = cvx.Variable(shape=(M,1)) #weighted resources
-        
-        #Need to multiply by w to get properly weighted KL divergence
-        wR0 = (params_comp['R0']*params_comp['w']*np.ones(M)/params_comp['tau']).reshape((M,1))
-
-        #Solve
-        obj = cvx.Minimize(cvx.sum(cvx.kl_div(wR0, wR)))
-        constraints = [G*wR <= h]
-        prob = cvx.Problem(obj, constraints)
-        prob.solver_stats
-        prob.solve(solver=cvx.ECOS,abstol=1e-10,reltol=1e-10,warm_start=True,verbose=False,max_iters=1000)
-
-        #Record the results
-        Nf=constraints[0].dual_value[0:S].reshape(S)
-        Rf=wR.value.reshape(M)*params_comp['tau']/params_comp['w']
-
-
+            print('supply must be external or self-renewing')
+            failed = True
         
     if not failed:
         N_new = np.zeros(len(N))
