@@ -169,12 +169,16 @@ class Community:
                                      shift_size=shift_size,max_iters=max_iters,
                                      eps=eps,R0t_0=R0t_0,verbose=verbose)
         
-        #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
-        pool = Pool()
-        y_out = np.asarray(pool.map(OptimizeTheseWells,well_info)).squeeze().T
+        if self.parallel:
+            #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
+            pool = Pool()
+            y_out = np.asarray(pool.map(OptimizeTheseWells,well_info)).squeeze().T
+            pool.close()
+        else:
+            #IF PARALLEL IS DEACTIVATED, USE ORDINARY MAP
+            y_out = np.asarray(list(map(OptimizeTheseWells,well_info))).squeeze().T
         if len(np.shape(y_out)) == 1:#handle case of single-well plate
             y_out = y_out[:,np.newaxis]
-        pool.close()
         
         #UPDATE STATE VARIABLES WITH RESULTS OF OPTIMIZATION
         self.N = pd.DataFrame(y_out[:self.S,:],
