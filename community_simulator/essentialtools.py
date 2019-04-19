@@ -246,7 +246,8 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             obj = cvx.Minimize((1/2)*cvx.quad_form(R0-R_opt,np.diag(w*r)))
             constraints = [G@R_opt <= h]
             prob = cvx.Problem(obj, constraints)
-            prob.solve(solver=cvx.OSQP,eps_abs=1e-6,eps_prim_inf=1e-6,eps_dual_inf=1e-6,polish=True,max_iter=int(1e6),time_limit=0)
+            prob.solve(solver=cvx.ECOS,abstol=1e-9,feastol=1e-7,abstol_inacc=1e-5,
+                       feastol_inacc=1e-5,max_iters=5000)
         
             #Record the results
             Nf=constraints[0].dual_value[:S]
