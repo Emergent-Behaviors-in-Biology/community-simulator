@@ -10,6 +10,9 @@ This package is designed for simulating batch culture experiments on complex mic
 
 Communities can also be run in chemostat mode, where nutrients are continually supplied and populations continuously diluted.  
 
+## Dependencies
+Numpy, Pandas, Matplotlib, SciPy (all included in the standard Anaconda distribution). The `SteadyState` method for finding equilibrium points additional requires CVXPY (www.cvxpy.org). 
+
 ## Installation
 ### Mac
 To install on a Mac, browse to the community-simulator directory in Terminal, and type
@@ -23,11 +26,9 @@ The easiest way of installing on Windows is through the Anaconda Navigator (http
 Note that the parallelization features are not currently supported on Windows, so be sure to set `parallel=False` when initializing an instance of the `Community` class.
 
 ## Documentation
-See the accompanying Jupyter notebook `Tutorial.ipynb` for explanations of the main classes, methods and functions, with illustrative examples.
+See the accompanying Jupyter notebook `Tutorial.ipynb` for explanations of the main classes, methods and functions, with illustrative examples. More detailed documentation can be found in the manuscript referenced below.
 
 ## Licensing and citation
 This package is provided under an MIT license. Please cite us if you use this software: 
 
-Robert Marsland III, Wenping Cui, Joshua Goldford, Alvaro Sanchez, Kirill Korolev, Pankaj Mehta *Available energy fluxes drive a transition in the diversity, stability, and functional structure of microbial communities,*  arXiv:1805.12516 (2018). 
-
-The Appendix to this paper contains a detailed description of the main features of the package.
+Robert Marsland III, Wenping Cui, Joshua Goldford, Pankaj Mehta *The Community Simulator: A Python package for microbial ecology,*  bioRxiv:613836 (2019). 
