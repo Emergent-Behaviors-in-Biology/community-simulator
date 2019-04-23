@@ -184,8 +184,7 @@ def CavityComparison_Gauss(params,S,n_wells=1,Stot=100):
            'r':r_combined,'w':w_combined,'u':u_combined,'g':1.}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound=15,
-                 cutoff=1e-10,eps=np.inf,trials=1,postprocess=False,Stot=100,run_number=0):
+def RunCommunity(params,S,plotting=False,com_params={},eps=np.inf,trials=1,postprocess=False,Stot=100,run_number=0):
     assert Stot>=S, 'S must be less than or equal to Stot.'
     assert Stot>=S/params['eta'], 'Q must be less than or equal to Stot.'
     assert Stot>=S*params['gamma'], 'M must be less than or equal to Stot.'
