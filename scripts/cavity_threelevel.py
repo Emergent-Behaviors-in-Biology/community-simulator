@@ -202,9 +202,7 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
     #Create Community class instance and run  
     TestPlate = Community([N0,RX0],[dNdt,dRdt],com_params)
     try:
-        Ntraj,RXtraj = TestPlate.SteadyState(supply='predator')
-        Rtraj = RXtraj['Resource']
-        Xtraj = RXtraj['Predator']
+        TestPlate.SteadyState(supply='predator')
     
         #Find final states
         Rfinal = TestPlate.R.loc['Resource'].values.reshape(-1)
@@ -229,41 +227,33 @@ def RunCommunity(params,S,T=10,n_iter=800,plotting=False,com_params={},log_bound
         fun = np.nan
     
     if plotting and fun<=eps:
-        plotting_well = N0.keys()[0]
-        f, axs = plt.subplots(3,2,figsize=(12,10))
-        visualization.StackPlot(Ntraj.loc(axis=0)[:,plotting_well].T,ax=axs[0,0])
-        visualization.StackPlot(Rtraj.loc(axis=0)[:,plotting_well].T,ax=axs[1,0])
-        visualization.StackPlot(Xtraj.loc(axis=0)[:,plotting_well].T,ax=axs[2,0])
-        axs[2,0].set_xlabel('Time')
-        axs[0,0].set_ylabel('Consumer Abundance')
-        axs[1,0].set_ylabel('Resource Abundance')
-        axs[2,0].set_ylabel('Predator Abundance')
+        f, axs = plt.subplots(3,1,figsize=(12,10))
         
         bins = np.linspace(-200,5,100)
-        axs[0,1].hist(np.log(Rfinal[Rfinal>0]),bins=bins,alpha=0.5,label='Resource')
-        axs[0,1].hist(np.log(Nfinal[Nfinal>0]),bins=bins,alpha=0.5,label='Consumer')
-        axs[0,1].hist(np.log(Xfinal[Xfinal>0]),bins=bins,alpha=0.5,label='Predator')
-        axs[0,1].set_xlabel('Log Species Abundance')
+        axs[0].hist(np.log(Rfinal[Rfinal>0]),bins=bins,alpha=0.5,label='Resource')
+        axs[0].hist(np.log(Nfinal[Nfinal>0]),bins=bins,alpha=0.5,label='Consumer')
+        axs[0].hist(np.log(Xfinal[Xfinal>0]),bins=bins,alpha=0.5,label='Predator')
+        axs[0].set_xlabel('Log Species Abundance')
 
         bins = np.linspace(0,5,20)
         xvec = np.linspace(0,5,100)
         dbin = bins[1]-bins[0]
-        axs[1,1].hist(Rfinal[Rfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[0],label='Resource')
-        axs[1,1].hist(Nfinal[Nfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[1],label='Consumer')
-        axs[1,1].hist(Xfinal[Xfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[2],label='Predator')
-        axs[1,1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M*dbin*trials,color=sns.color_palette()[0])
-        axs[1,1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S*dbin*trials,color=sns.color_palette()[1])
-        axs[1,1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q*dbin*trials,color=sns.color_palette()[2])
-        axs[1,1].set_xlabel('Non-extinct Species Abundance')
+        axs[1].hist(Rfinal[Rfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[0],label='Resource')
+        axs[1].hist(Nfinal[Nfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[1],label='Consumer')
+        axs[1].hist(Xfinal[Xfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[2],label='Predator')
+        axs[1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M*dbin*trials,color=sns.color_palette()[0])
+        axs[1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S*dbin*trials,color=sns.color_palette()[1])
+        axs[1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q*dbin*trials,color=sns.color_palette()[2])
+        axs[1].set_xlabel('Non-extinct Species Abundance')
         
         #Compare initial and final values in optimization
-        axs[2,1].plot(xvec,Ral(args0,params,Rvec=xvec)*M,color=sns.color_palette()[0],alpha=0.2)
-        axs[2,1].plot(xvec,Ni(args0,params,Nvec=xvec)*S,color=sns.color_palette()[1],alpha=0.2)
-        axs[2,1].plot(xvec,Xa(args0,params,Xvec=xvec)*Q,color=sns.color_palette()[2],alpha=0.2)
-        axs[2,1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M,color=sns.color_palette()[0],label='Resource')
-        axs[2,1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S,color=sns.color_palette()[1],label='Consumer')
-        axs[2,1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q,color=sns.color_palette()[2],label='Predator')
-        axs[2,1].set_xlabel('Non-extinct Species Abundance')
+        axs[2].plot(xvec,Ral(args0,params,Rvec=xvec)*M,color=sns.color_palette()[0],alpha=0.2)
+        axs[2].plot(xvec,Ni(args0,params,Nvec=xvec)*S,color=sns.color_palette()[1],alpha=0.2)
+        axs[2].plot(xvec,Xa(args0,params,Xvec=xvec)*Q,color=sns.color_palette()[2],alpha=0.2)
+        axs[2].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M,color=sns.color_palette()[0],label='Resource')
+        axs[2].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S,color=sns.color_palette()[1],label='Consumer')
+        axs[2].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q,color=sns.color_palette()[2],label='Predator')
+        axs[2].set_xlabel('Non-extinct Species Abundance')
         plt.legend()
     
     if postprocess:
