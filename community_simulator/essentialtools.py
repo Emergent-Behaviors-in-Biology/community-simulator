@@ -56,7 +56,7 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==S, 'Invalid length for ' + name
                 params_comp[name]=params_comp[name][not_extinct[:S]]
-    for name in ['e','w','r','tau']:
+    for name in ['e','w','r','tau','R0']:
         if name in params_comp.keys():
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==M, 'Invalid length for ' + name
@@ -101,7 +101,7 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==len(N), 'Invalid length for ' + name
                 params_comp[name]=params_comp[name][not_extinct_consumers]
-    for name in ['l','w','r','tau']:
+    for name in ['l','w','r','tau','R0']:
         if name in params_comp.keys():
             if type(params_comp[name]) == np.ndarray:
                 assert len(params_comp[name])==len(R), 'Invalid length for ' + name
