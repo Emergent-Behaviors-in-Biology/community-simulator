@@ -140,7 +140,10 @@ def cost_function_bounded(args,params):
 #############################
     
 #Generate dynamics for McArthur CRM with predator
-assumptions = {'supply':'predator'}
+assumptions = {'supply':'predator',
+               'regulation':'independent',
+               'response':'type I'
+              }
 def dNdt(N,R,params):
     return usertools.MakeConsumerDynamics(assumptions)(N,R,params)
 def dRdt(N,R,params):
