@@ -236,21 +236,17 @@ def CavityComparison_Gauss(params,M,n_wells=1,Stot=100):
            'r':r_combined,'w':w_combined,'u':u_combined,'g':1.}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,M,plotting=False,com_params={},eps=np.inf,trials=1,postprocess=False,
-                 Stot=100,run_number=0,cutoff=1e-5):
+def RunCommunity(params,M,plotting=False,eps=1e-5,trials=1,postprocess=False,
+                 Stot=100,run_number=0,cutoff=1e-5,max_iter=20):
     
-    [N0,RX0], com_params_new = CavityComparison_Gauss(params,M,n_wells=trials,Stot=Stot)
-    S = com_params_new['S']
-    Q = com_params_new['Q']
-    M = com_params_new['M']
-    
-    #Generate new parameter set unless user has passed one
-    if len(com_params)==0:
-        com_params = com_params_new
-    
-    #Create Community class instance and run  
-    TestPlate = Community([N0,RX0],[dNdt,dRdt],com_params)
-    try:
+    fun = np.inf
+    k=0
+    while fun > eps and k < max_iter:
+        [N0,RX0], com_params = CavityComparison_Gauss(params,M,n_wells=trials,Stot=Stot)
+        S = com_params['S']
+        Q = com_params['Q']
+        M = com_params['M']
+        TestPlate = Community([N0,RX0],[dNdt,dRdt],com_params)
         TestPlate.SteadyState(supply='predator')
     
         #Find final states
@@ -277,11 +273,12 @@ def RunCommunity(params,M,plotting=False,com_params={},eps=np.inf,trials=1,postp
             out = opt.minimize(cost_function_bounded,args0,args=(params,))
             args_cav = out.x
             fun = out.fun
-    except:
+        k += 1
+    if fun > eps:
         args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
         fun = np.nan
     
-    if plotting and fun<=eps:
+    if plotting:
         f, axs = plt.subplots(3,1,figsize=(12,10))
         
         bins = np.linspace(-200,5,100)
@@ -340,7 +337,7 @@ def RunCommunity(params,M,plotting=False,com_params={},eps=np.inf,trials=1,postp
         for item in params.keys():
             data[item]=params[item]
         for item in ['S','M','Q']:
-            data[item]=com_params_new[item]
+            data[item]=com_params[item]
         
         sim_index = [Stot*['m']+Stot*['R0']+Stot*['u'],3*list(range(Stot))]
         sim_params = pd.DataFrame(np.hstack((com_params['m'],com_params['R0'][:Stot],com_params['u'][Stot:])),columns=data.index,index=sim_index).T
