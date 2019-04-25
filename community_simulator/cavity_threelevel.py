@@ -92,6 +92,30 @@ def test_bound_1(args,params):
 def test_bound_2(args,params):
     return params['eta']*phiN(args,params)-phiX(args,params)
 
+####OPTION WHEN PREDATORS ARE EXTINCT
+def sigN2(args,params):
+    R,N,qR,qN = args
+    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['gamma']*qR)
+def sigR2(args,params):
+    R,N,qR,qN = args
+    return np.sqrt(params['sigK']**2 + params['sigc']**2*qN)
+def DelN2(args,params):
+    R,N,qR,qN = args
+    return (params['gamma']*params['muc']*R-params['m'])/sigN2(args,params)
+def DelR2(args,params):
+    R,N,qR,qN = args
+    return (params['K']-params['muc']*N)/sigR2(args,params)
+def phiN2(args,params):
+    return w0(DelN2(args,params))
+def phiR2(args,params):
+    return w0(DelR2(args,params))
+def fN2(args,params):
+    return 1/(params['sigc']**2*(params['gamma']*phiR2(args,params)-phiN2(args,params)))
+def fR2(args,params):
+    return 1-phiN2(args,params)/(params['gamma']*phiR2(args,params))
+def test_bound_12(args,params):
+    return params['gamma']*phiR2(args,params)-phiN2(args,params)
+
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(args,params):
     args_new = args/np.asarray([sigR(args,params)*fR(args,params),
@@ -135,6 +159,27 @@ def cost_function_bounded(args,params):
     else:
         return np.inf
 
+#Ignore predator if it is mostly extinct
+def cost_function_no_pred(args,params):
+    args_new = args/np.asarray([sigR2(args,params)*fR2(args,params),
+                                sigN2(args,params)*fN2(args,params),
+                                (sigR2(args,params)*fR2(args,params))**2,
+                                (sigN2(args,params)*fN2(args,params))**2])
+    b1 = test_bound_12(args,params)
+
+    if np.isfinite(b1):
+        if b1>0 and np.all(args>=0):
+            RHS = np.asarray([w1(DelR2(args,params)),
+                              w1(DelN2(args,params)),
+                              w2(DelR2(args,params)),
+                              w2(DelN2(args,params))])
+                                            
+            return np.sum((args_new-RHS)**2)
+        else:
+            return np.inf
+    else:
+        return np.inf
+
 #############################
 #SOLVE PROBLEM
 #############################
@@ -150,9 +195,13 @@ def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(assumptions)(N,R,params)
     
 #Generate parameters for McArthur CRM from cavity parameters
-def CavityComparison_Gauss(params,S,n_wells=1,Stot=100):
-    M = int(round(params['gamma']*S))
+def CavityComparison_Gauss(params,M,n_wells=1,Stot=100):
+    S = int(round(M/params['gamma']))
     Q = int(round(S/params['eta']))
+    
+    assert Stot>=S, 'S must be less than or equal to Stot.'
+    assert Stot>=Q, 'Q must be less than or equal to Stot.'
+    assert Stot>=M, 'M must be less than or equal to Stot.'
     
     c_ibeta = params['muc']/S + np.random.randn(Stot,Stot)*params['sigc']/np.sqrt(S)
     d_aj = params['mud']/Q + np.random.randn(Stot,Stot)*params['sigd']/np.sqrt(Q)
@@ -187,12 +236,10 @@ def CavityComparison_Gauss(params,S,n_wells=1,Stot=100):
            'r':r_combined,'w':w_combined,'u':u_combined,'g':1.}
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(params,S,plotting=False,com_params={},eps=np.inf,trials=1,postprocess=False,Stot=100,run_number=0):
-    assert Stot>=S, 'S must be less than or equal to Stot.'
-    assert Stot>=S/params['eta'], 'Q must be less than or equal to Stot.'
-    assert Stot>=S*params['gamma'], 'M must be less than or equal to Stot.'
+def RunCommunity(params,M,plotting=False,com_params={},eps=np.inf,trials=1,postprocess=False,
+                 Stot=100,run_number=0,cutoff=1e-5):
     
-    [N0,RX0], com_params_new = CavityComparison_Gauss(params,S,n_wells=trials,Stot=Stot)
+    [N0,RX0], com_params_new = CavityComparison_Gauss(params,M,n_wells=trials,Stot=Stot)
     S = com_params_new['S']
     Q = com_params_new['Q']
     M = com_params_new['M']
@@ -218,12 +265,18 @@ def RunCommunity(params,S,plotting=False,com_params={},eps=np.inf,trials=1,postp
                                         np.mean(Rfinal**2)/params['gamma'], 
                                         np.mean(Nfinal**2), 
                                         np.mean(Xfinal**2)*params['eta']])+1e-10
-        if np.mean(Nfinal) == 0:
-            args0[0] = w1(params['K']/params['sigK'])*params['sigK']
-            args0[3] = w2(params['K']/params['sigK'])*params['sigK']**2
-        out = opt.minimize(cost_function_bounded,args0,args=(params,))
-        args_cav = out.x
-        fun = out.fun
+        if np.max(Nfinal) < cutoff:
+            args_cav= [w1(params['K']/params['sigK'])*params['sigK'],0,0,w2(params['K']/params['sigK'])*params['sigK']**2,0,0]
+            fun = 0
+        elif np.max(Xfinal) < cutoff:
+            args0_temp = np.asarray(args0)[[0,1,3,4]]
+            out = opt.minimize(cost_function_no_pred,args0_temp,args=(params,))
+            args_cav = np.asarray([out.x[0],out.x[1],0,out.x[2],out.x[3],0])
+            fun = out.fun
+        else:
+            out = opt.minimize(cost_function_bounded,args0,args=(params,))
+            args_cav = out.x
+            fun = out.fun
     except:
         args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
         fun = np.nan
