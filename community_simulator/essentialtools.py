@@ -176,15 +176,10 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             except:
                 #If optimization fails, try new R0t
                 shift = shift_size*np.random.randn(M)
-                if np.min(R0t + shift) < 0: #Prevent any values from becoming negative
-                    R0t = R0t_0*np.ones(M)
-                    Rf = np.inf
-                    Rf_old = 0
-                else:
-                    R0t = R0t + shift
+                R0t = np.abs(R0t + shift)
                 
                 if verbose:
-                    print('Added '+str(eps)+' times random numbers')
+                    print('Added '+str(shift_size)+' times random numbers')
             k+=1
             #Check for limit cycle
             if np.isfinite(Delta) and Delta > tol and np.abs(Delta-Delta_old) < 0.1*tol:
@@ -195,6 +190,9 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
 
         if k == max_iters:
             failed = 1
+        else:
+            if verbose:
+                print('success')
                           
     elif params_comp['l'] == 0:
         if supply == 'external':
