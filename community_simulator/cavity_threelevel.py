@@ -235,6 +235,52 @@ def CavityComparison_Gauss(params,M,n_wells=1,Stot=100):
     return [N0,RX0], {'S':S,'Q':Q,'M':M,'c':c_combined,'m':m_i,'R0':K_combined,
            'r':r_combined,'w':w_combined,'u':u_combined,'g':1.}
 
+def CavityComparison_Binary(params,M,n_wells=1,Stot=100):
+    S = int(round(M/params['gamma']))
+    Q = int(round(S/params['eta']))
+    
+    assert Stot>=S, 'S must be less than or equal to Stot.'
+    assert Stot>=Q, 'Q must be less than or equal to Stot.'
+    assert Stot>=M, 'M must be less than or equal to Stot.'
+    
+    p_c = 1/((S*params['sigc']**2/params['muc']**2)+1)
+    c1 = params['muc']/(S*p_c)
+    
+    p_d = 1/((Q*params['sigd']**2/params['mud']**2)+1)
+    d1 = params['mud']/(Q*p_d)
+    
+    c_ibeta = usertools.BinaryRandomMatrix(Stot,Stot,p_c)*c1
+    d_aj = usertools.BinaryRandomMatrix(Stot,Stot,p_d)*d1
+    m_i = params['m'] + np.random.randn(Stot)*params['sigm']
+    u_a = params['u'] + np.random.randn(Stot)*params['sigu']
+    K_alpha = params['K'] + np.random.randn(Stot)*params['sigK']
+    
+    c_combined = np.hstack((c_ibeta,-d_aj.T))
+    r_combined = np.hstack((np.ones(Stot),np.zeros(Stot)))
+    K_combined = np.hstack((K_alpha,np.zeros(Stot)))
+    w_combined = np.ones(len(r_combined))
+    u_combined = np.hstack((np.zeros(Stot),u_a))
+    
+    N0 = np.zeros((Stot,n_wells))
+    R0 = np.zeros((Stot,n_wells))
+    X0 = np.zeros((Stot,n_wells))
+    
+    for k in range(n_wells):
+        N0[np.random.choice(Stot,size=S,replace=False),k]=1e-3/S
+        R0[np.random.choice(Stot,size=M,replace=False),k]=1
+        X0[np.random.choice(Stot,size=Q,replace=False),k]=1e-3/Q
+    
+    well_names = ['W'+str(k) for k in range(n_wells)]
+    species_names = ['S'+str(k) for k in range(Stot)]
+    type_names = ['Resource']*Stot+['Predator']*Stot
+    resource_names = 2*list(range(Stot))
+    resource_index = [type_names,resource_names]
+    N0 = pd.DataFrame(N0,index=species_names,columns=well_names)
+    RX0 = pd.DataFrame(np.vstack((R0,X0)),index=resource_index,columns=well_names)
+    
+    return [N0,RX0], {'S':S,'Q':Q,'M':M,'c':c_combined,'m':m_i,'R0':K_combined,
+        'r':r_combined,'w':w_combined,'u':u_combined,'g':1.}
+
 #Run community to steady state, extract moments of steady state, plot results
 def RunCommunity(params,M,plotting=False,eps=1e-5,trials=1,postprocess=False,
                  Stot=100,run_number=0,cutoff=1e-5,max_iter=20):
