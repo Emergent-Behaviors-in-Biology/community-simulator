@@ -283,12 +283,18 @@ def CavityComparison_Binary(params,M,n_wells=1,Stot=100):
 
 #Run community to steady state, extract moments of steady state, plot results
 def RunCommunity(params,M,plotting=False,eps=1e-5,trials=1,postprocess=False,
-                 Stot=100,run_number=0,cutoff=1e-5,max_iter=20):
+                 Stot=100,run_number=0,cutoff=1e-5,max_iter=20,sampling='Gaussian'):
     
     fun = np.inf
     k=0
     while fun > eps and k < max_iter:
-        [N0,RX0], com_params = CavityComparison_Gauss(params,M,n_wells=trials,Stot=Stot)
+        if sampling=='Gaussian':
+            [N0,RX0], com_params = CavityComparison_Gauss(params,M,n_wells=trials,Stot=Stot)
+        elif sampling=='Binary':
+            [N0,RX0], com_params = CavityComparison_Binary(params,M,n_wells=trials,Stot=Stot)
+        else:
+            print('Invalid sampling choice. Must be Gaussian or Binary')
+            return 0
         S = com_params['S']
         Q = com_params['Q']
         M = com_params['M']
@@ -432,19 +438,19 @@ def ComputeIPR(df):
         IPR.loc[j] = 1./((p[p>0]**2).sum())
     return IPR
 
-def PostProcess(folders,tmax=10,tmin=1):
+def PostProcess(folders,tmax=10,tmin=1,suff='K'):
     j=0
-    data_names = ['Consumer IPR','Resource IPR','Predator IPR',
-                 'Consumer Richness','Resource Richness','Predator Richness',
-                 'Consumer Biomass','Resource Biomass','Predator Biomass']
-    
-    data = pd.DataFrame(index=[0],columns=data_names+param_names)
+    data_names = ['Herbivore IPR','Plant IPR','Carnivore IPR',
+                 'Herbivore richness','Plant richness','Carnivore richness',
+                 'Herbivore biomass','Plant biomass','Carnivore biomass']
+    data_names = data_names + [name+' Error' for name in data_names]
                         
     for k in np.arange(len(folders)):
         folder = FormatPath(folders[k])
 
         for task_id in np.arange(tmin,tmax+1):
-            finalstate,params = LoadData(folder,task_id=task_id)
+            data = pd.DataFrame(index=[0],columns=data_names+param_names)
+            finalstate,params = LoadData(folder,task_id=task_id, suff=suff)
             N = finalstate.loc[idx[:,'Consumer',:],:]
             R = finalstate.loc[idx[:,'Resource',:],:]
             X = finalstate.loc[idx[:,'Predator',:],:]
@@ -452,23 +458,31 @@ def PostProcess(folders,tmax=10,tmin=1):
             N_IPR = ComputeIPR(N)
             R_IPR = ComputeIPR(R)
             X_IPR = ComputeIPR(X)
-    
+            n_wells = len(N_IPR.keys())
+            
             for plate in N_IPR.index:
-                for well in N_IPR.keys():
-                    data.loc[j,'Consumer IPR'] = N_IPR.loc[plate,well]
-                    data.loc[j,'Resource IPR'] = R_IPR.loc[plate,well]
-                    data.loc[j,'Predator IPR'] = X_IPR.loc[plate,well]
-                    data.loc[j,'Consumer Richness']=(N.loc[plate]>0).sum()[well]
-                    data.loc[j,'Resource Richness']=(R.loc[plate]>0).sum()[well]
-                    data.loc[j,'Predator Richness']=(X.loc[plate]>0).sum()[well]
-                    data.loc[j,'Consumer Biomass']=N[well].loc[plate].sum()
-                    data.loc[j,'Resource Biomass']=R[well].loc[plate].sum()
-                    data.loc[j,'Predator Biomass']=X[well].loc[plate].sum()
-                    for item in param_names:
-                        data.loc[j,item] = params.loc[plate,item]
-                    
-                    j+=1
-            data.to_excel('processed_data.xlsx')
+                data.loc[j,'Herbivore IPR'] = N_IPR.loc[plate].mean()
+                data.loc[j,'Plant IPR'] = R_IPR.loc[plate].mean()
+                data.loc[j,'Carnivore IPR'] = X_IPR.loc[plate].mean()
+                data.loc[j,'Herbivore richness']=(N.loc[plate]>0).sum().mean()
+                data.loc[j,'Plant richness']=(R.loc[plate]>0).sum().mean()
+                data.loc[j,'Carnivore richness']=(X.loc[plate]>0).sum().mean()
+                data.loc[j,'Herbivore biomass']=N.loc[plate].sum().mean()
+                data.loc[j,'Plant biomass']=R.loc[plate].sum().mean()
+                data.loc[j,'Carnivore biomass']=X.loc[plate].sum().mean()
+                data.loc[j,'Herbivore IPR Error'] = N_IPR.loc[plate].std()/np.sqrt(n_wells)
+                data.loc[j,'Plant IPR Error'] = R_IPR.loc[plate].std()/np.sqrt(n_wells)
+                data.loc[j,'Carnivore IPR Error'] = X_IPR.loc[plate].std()/np.sqrt(n_wells)
+                data.loc[j,'Herbivore richness Error']=(N.loc[plate]>0).sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Plant richness Error']=(R.loc[plate]>0).sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Carnivore richness Error']=(X.loc[plate]>0).sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Herbivore biomass Error']=N.loc[plate].sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Plant biomass Error']=R.loc[plate].sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Carnivore biomass Error']=X.loc[plate].sum().std()/np.sqrt(n_wells)
+                for item in param_names:
+                    data.loc[j,item] = params.loc[plate,item]
+                j+=1
+            data.to_excel('processed_data_'+str(task_id)+'.xlsx')
     return data
 
 def ReviveCommunity(folder,task_id=1,run_number=1,wells=[]):
