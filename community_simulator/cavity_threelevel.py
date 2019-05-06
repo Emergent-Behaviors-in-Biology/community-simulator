@@ -246,11 +246,11 @@ def CavityComparison_Binary(params,M,n_wells=1,Stot=100):
     p_c = 1/((S*params['sigc']**2/params['muc']**2)+1)
     c1 = params['muc']/(S*p_c)
     
-    p_d = 1/((Q*params['sigd']**2/params['mud']**2)+1)
-    d1 = params['mud']/(Q*p_d)
+    p_d = 1/((Q*params['sigd']**2/(params['mud']-params['d0'])**2)+1)
+    d1 = (params['mud']-params['d0'])/(Q*p_d)
     
     c_ibeta = usertools.BinaryRandomMatrix(Stot,Stot,p_c)*c1
-    d_aj = usertools.BinaryRandomMatrix(Stot,Stot,p_d)*d1
+    d_aj = usertools.BinaryRandomMatrix(Stot,Stot,p_d)*d1+params['d0']/Q
     m_i = params['m'] + np.random.randn(Stot)*params['sigm']
     u_a = params['u'] + np.random.randn(Stot)*params['sigu']
     K_alpha = params['K'] + np.random.randn(Stot)*params['sigK']
@@ -438,7 +438,7 @@ def ComputeIPR(df):
         IPR.loc[j] = 1./((p[p>0]**2).sum())
     return IPR
 
-def PostProcess(folders,tmax=10,tmin=1,suff='K'):
+def PostProcess(folders,tmax=10,tmin=1,suff='K',thresh=1e-4):
     j=0
     data_names = ['Herbivore IPR','Plant IPR','Carnivore IPR',
                  'Herbivore richness','Plant richness','Carnivore richness',
@@ -464,18 +464,18 @@ def PostProcess(folders,tmax=10,tmin=1,suff='K'):
                 data.loc[j,'Herbivore IPR'] = N_IPR.loc[plate].mean()
                 data.loc[j,'Plant IPR'] = R_IPR.loc[plate].mean()
                 data.loc[j,'Carnivore IPR'] = X_IPR.loc[plate].mean()
-                data.loc[j,'Herbivore richness']=(N.loc[plate]>0).sum().mean()
-                data.loc[j,'Plant richness']=(R.loc[plate]>0).sum().mean()
-                data.loc[j,'Carnivore richness']=(X.loc[plate]>0).sum().mean()
+                data.loc[j,'Herbivore richness']=(N.loc[plate]>thresh).sum().mean()
+                data.loc[j,'Plant richness']=(R.loc[plate]>thresh).sum().mean()
+                data.loc[j,'Carnivore richness']=(X.loc[plate]>thresh).sum().mean()
                 data.loc[j,'Herbivore biomass']=N.loc[plate].sum().mean()
                 data.loc[j,'Plant biomass']=R.loc[plate].sum().mean()
                 data.loc[j,'Carnivore biomass']=X.loc[plate].sum().mean()
                 data.loc[j,'Herbivore IPR Error'] = N_IPR.loc[plate].std()/np.sqrt(n_wells)
                 data.loc[j,'Plant IPR Error'] = R_IPR.loc[plate].std()/np.sqrt(n_wells)
                 data.loc[j,'Carnivore IPR Error'] = X_IPR.loc[plate].std()/np.sqrt(n_wells)
-                data.loc[j,'Herbivore richness Error']=(N.loc[plate]>0).sum().std()/np.sqrt(n_wells)
-                data.loc[j,'Plant richness Error']=(R.loc[plate]>0).sum().std()/np.sqrt(n_wells)
-                data.loc[j,'Carnivore richness Error']=(X.loc[plate]>0).sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Herbivore richness Error']=(N.loc[plate]>thresh).sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Plant richness Error']=(R.loc[plate]>thresh).sum().std()/np.sqrt(n_wells)
+                data.loc[j,'Carnivore richness Error']=(X.loc[plate]>thresh).sum().std()/np.sqrt(n_wells)
                 data.loc[j,'Herbivore biomass Error']=N.loc[plate].sum().std()/np.sqrt(n_wells)
                 data.loc[j,'Plant biomass Error']=R.loc[plate].sum().std()/np.sqrt(n_wells)
                 data.loc[j,'Carnivore biomass Error']=X.loc[plate].sum().std()/np.sqrt(n_wells)
