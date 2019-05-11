@@ -29,10 +29,11 @@ def w2(Delta):
 #Standard deviations of invasion growth rates
 def sigX(args,params):
     R,N,X,qR,qN,qX = args
-    return np.sqrt(params['sigu']**2 + params['sigd']**2*params['eta']*qN)
+    return np.sqrt(params['sigu']**2 + params['sigd']**2*params['epsX']**2*params['eta']*qN)
 def sigN(args,params):
     R,N,X,qR,qN,qX = args
-    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['gamma']*qR+params['sigd']**2*qX)
+    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['epsN']**2*
+                   params['gamma']*qR+params['sigd']**2*qX)
 def sigR(args,params):
     R,N,X,qR,qN,qX = args
     return np.sqrt(params['sigK']**2 + params['sigc']**2*qN)
@@ -40,10 +41,10 @@ def sigR(args,params):
 #Mean invasion growth rates normalized by standard deviation
 def DelX(args,params):
     R,N,X,qR,qN,qX = args
-    return (params['eta']*params['mud']*N-params['u'])/sigX(args,params)
+    return (params['eta']*params['epsX']*params['mud']*N-params['u'])/sigX(args,params)
 def DelN(args,params):
     R,N,X,qR,qN,qX = args
-    return (params['gamma']*params['muc']*R-params['m']-params['mud']*X)/sigN(args,params)
+    return (params['gamma']*params['epsN']*params['muc']*R-params['m']-params['mud']*X)/sigN(args,params)
 def DelR(args,params):
     R,N,X,qR,qN,qX = args
     return (params['K']-params['muc']*N)/sigR(args,params)
@@ -58,13 +59,12 @@ def phiR(args,params):
 
 #Factors for converting invasion growth rate to steady-state abundance
 def fX(args,params):
-    return params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
-                              -params['eta']*phiN(args,params))/(params['eta']*params['sigd']**2
-                                                                 *(params['eta']*phiN(args,params)
-                                                                   -phiX(args,params)))
+    return (params['sigc']**2*params['epsN']*(params['gamma']*params['eta']*phiR(args,params)+
+                                              phiX(args,params)-params['eta']*phiN(args,params))
+            /(params['eta']*params['epsX']*params['sigd']**2*(params['eta']*phiN(args,params)-phiX(args,params))))
 def fN(args,params):
     return ((params['eta']-phiX(args,params)/phiN(args,params))/
-            (params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
+            (params['epsN']*params['sigc']**2*(params['gamma']*params['eta']*phiR(args,params)+phiX(args,params)
                                 -params['eta']*phiN(args,params))))
 def fR(args,params):
     return (1+(phiX(args,params)/(params['gamma']*params['eta']*phiR(args,params)))
@@ -95,13 +95,13 @@ def test_bound_2(args,params):
 ####OPTION WHEN PREDATORS ARE EXTINCT
 def sigN2(args,params):
     R,N,qR,qN = args
-    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['gamma']*qR)
+    return np.sqrt(params['sigm']**2 + params['sigc']**2*params['epsN']**2*params['gamma']*qR)
 def sigR2(args,params):
     R,N,qR,qN = args
     return np.sqrt(params['sigK']**2 + params['sigc']**2*qN)
 def DelN2(args,params):
     R,N,qR,qN = args
-    return (params['gamma']*params['muc']*R-params['m'])/sigN2(args,params)
+    return (params['gamma']*params['epsN']*params['muc']*R-params['m'])/sigN2(args,params)
 def DelR2(args,params):
     R,N,qR,qN = args
     return (params['K']-params['muc']*N)/sigR2(args,params)
@@ -110,7 +110,7 @@ def phiN2(args,params):
 def phiR2(args,params):
     return w0(DelR2(args,params))
 def fN2(args,params):
-    return 1/(params['sigc']**2*(params['gamma']*phiR2(args,params)-phiN2(args,params)))
+    return 1/(params['epsN']*params['sigc']**2*(params['gamma']*phiR2(args,params)-phiN2(args,params)))
 def fR2(args,params):
     return 1-phiN2(args,params)/(params['gamma']*phiR2(args,params))
 def test_bound_12(args,params):
@@ -208,11 +208,13 @@ def CavityComparison_Gauss(params,M,n_wells=1,Stot=100):
     m_i = params['m'] + np.random.randn(Stot)*params['sigm']
     u_a = params['u'] + np.random.randn(Stot)*params['sigu']
     K_alpha = params['K'] + np.random.randn(Stot)*params['sigK']
+    w_alpha = params['epsN']*np.ones(Stot)
+    w_a = np.ones(Stot)/params['epsX']
     
-    c_combined = np.hstack((c_ibeta,-d_aj.T))
+    c_combined = np.hstack((c_ibeta,-d_aj.T*params['epsX']))
     r_combined = np.hstack((np.ones(Stot),np.zeros(Stot)))
     K_combined = np.hstack((K_alpha,np.zeros(Stot)))
-    w_combined = np.ones(len(r_combined))
+    w_combined = np.hstack((w_alpha,w_a))
     u_combined = np.hstack((np.zeros(Stot),u_a))
     
     N0 = np.zeros((Stot,n_wells))
@@ -254,11 +256,13 @@ def CavityComparison_Binary(params,M,n_wells=1,Stot=100):
     m_i = params['m'] + np.random.randn(Stot)*params['sigm']
     u_a = params['u'] + np.random.randn(Stot)*params['sigu']
     K_alpha = params['K'] + np.random.randn(Stot)*params['sigK']
+    w_alpha = params['epsN']*np.ones(Stot)
+    w_a = np.ones(Stot)/params['epsX']
     
-    c_combined = np.hstack((c_ibeta,-d_aj.T))
+    c_combined = np.hstack((c_ibeta,-d_aj.T*params['epsX']))
     r_combined = np.hstack((np.ones(Stot),np.zeros(Stot)))
     K_combined = np.hstack((K_alpha,np.zeros(Stot)))
-    w_combined = np.ones(len(r_combined))
+    w_combined = np.hstack((w_alpha,w_a))
     u_combined = np.hstack((np.zeros(Stot),u_a))
     
     N0 = np.zeros((Stot,n_wells))
@@ -406,7 +410,7 @@ def RunCommunity(params,M,plotting=False,eps=1e-5,trials=1,postprocess=False,
 #STUDY RESULTS
 #############################
 
-param_names = 'K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta'.split(',')
+param_names = 'K,sigK,muc,sigc,mud,sigd,m,sigm,u,sigu,gamma,eta,epsN,epsX'.split(',')
 idx=pd.IndexSlice
     
 def FormatPath(folder):

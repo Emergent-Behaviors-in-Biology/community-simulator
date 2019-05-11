@@ -272,7 +272,7 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             G = np.vstack((G,-np.eye(M)))
             h = np.hstack((h,np.zeros(M)))
             #Solve
-            obj = cvx.Minimize((1/2)*cvx.quad_form(R0-R_opt,np.diag(w*r))+u.T@R_opt)
+            obj = cvx.Minimize((1/2)*cvx.quad_form(R0-R_opt,np.diag(w*r))+(w*u).T@R_opt)
             constraints = [G@R_opt <= h]
             prob = cvx.Problem(obj, constraints)
             prob.solve(solver=cvx.ECOS,abstol=1e-9,feastol=1e-7,abstol_inacc=1e-5,
