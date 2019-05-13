@@ -11,7 +11,7 @@ This package is designed for simulating batch culture experiments on complex mic
 Communities can also be run in chemostat mode, where nutrients are continually supplied and populations continuously diluted.  
 
 ## Dependencies
-Numpy, Pandas, Matplotlib, SciPy (all included in the standard Anaconda distribution). The `SteadyState` method for finding equilibrium points additional requires CVXPY (www.cvxpy.org). 
+Numpy, Pandas, Matplotlib, SciPy (all included in the standard Anaconda distribution). The `SteadyState` method for finding equilibrium points additional requires CVXPY >= 1.0 (www.cvxpy.org) . 
 
 ## Installation
 ### Mac
