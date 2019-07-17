@@ -8,7 +8,7 @@ Created on Thu Nov  9 14:51:13 2017
 
 import numpy as np
 from scipy.stats import norm
-from community_simulator import Community,essentialtools,usertools,visualization
+from community_simulator import Community,essentialtools,usertools,visualization,analysis
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.optimize as opt

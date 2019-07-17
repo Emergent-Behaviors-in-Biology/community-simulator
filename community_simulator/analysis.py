@@ -104,6 +104,45 @@ def Susceptibility(N,R,beta,params):
     
     return chi, eta
 
+def chi_diag(N,R,params,thresh=1e-4):
+    """
+    Compute mean of diagonal part of susceptibilities
+    """
+    
+    if type(params['c']) is pd.DataFrame:
+        c = params['c'].values
+    else:
+        c = params['c']
+    if type(params['D']) is pd.DataFrame:
+        D = params['D'].values
+    else:
+        D = params['D']
+    M = len(D)
+    l = params['l']
+    tau = params['tau']
+    
+    not_extinct = np.where(N > thresh)[0]
+    c = c[not_extinct,:]
+    S_star = len(not_extinct)
+    N = N[not_extinct]
+
+    A1 = (D*l-np.eye(M))*(c.T.dot(N))-np.eye(M)/tau
+    A2 = (D*l-np.eye(M)).dot((c*R).T)
+    A3 = np.hstack(((1-l)*c,np.zeros((S_star,S_star))))
+    A = np.vstack((np.hstack((A1,A2)),A3))
+
+    chi = []
+    for beta in range(M):
+        b = np.zeros(M+S_star)
+        b[beta] = -1/tau
+
+        Ainv = np.linalg.inv(A)
+        chieta = Ainv.dot(b)
+
+        chi.append(chieta[beta])
+    
+    return np.mean(chi)
+
 def NODF(A):
     """
     Compute the Nestdness metric based on Overlap and Decreasing Fill (NODF) as

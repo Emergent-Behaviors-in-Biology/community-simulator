@@ -8,7 +8,7 @@ Created on Thu Nov  9 14:51:13 2017
 
 import numpy as np
 from scipy.stats import norm
-from community_simulator import Community,essentialtools,usertools,visualization
+from community_simulator import Community,essentialtools,usertools,visualization,analysis
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.optimize as opt
@@ -68,7 +68,30 @@ def chi(args,params):
 
 #Test satisfaction of competitive exclusion bound for consumers and predators
 def test_bound_1(args,params):
-    return params['gamma']*phiR(args,params)-phiN(args,params)
+    return params['gamma']-phiN(args,params)
+
+def cost_vector(args,params):
+    R,N,qR,qN,chi = args
+    omega_eff = params['omega']+params['muc']*N/params['gamma']
+    kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
+    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
+    r1 = kappa_eff*nubar/omega_eff**2
+    r2 = sigp(args,params)**2*nubar**2/omega_eff**4
+    r3 = sigd(args,params)**2/omega_eff**2
+
+    RHS = np.asarray([(np.sqrt(omega_eff**2+4*kappa_eff*nubar)
+                       -2*(nubar**2*sigp(args,params)**2-kappa_eff*nubar*sigd(args,params)**2)/
+                          ((omega_eff**2+4*kappa_eff*nubar)**(3/2))),
+                     (sigN(args,params)/(chi*params['sigc']**2*R))*w1(DelN(args,params)),
+                     (omega_eff**2/(2*nubar**2))*(1-np.sqrt(1+4*r1)+2*r1
+                        +(1+4*r1)**(-3/2)*(r3+4*r2)+r3),
+                     (sigN(args,params)/(chi*params['sigc']**2*R))**2*w2(DelN(args,params)),
+                     (((omega_eff**2+4*kappa_eff*nubar)**2
+                        +(omega_eff**2-2*kappa_eff**2*nubar)
+                        *sigd(args,params)**2+6*nubar**2*sigp(args,params)**2)
+                     /(omega_eff**2+4*kappa_eff*nubar)**(5/2))])
+    
+    return RHS
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(args,params):
@@ -76,13 +99,17 @@ def cost_function(args,params):
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
     nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
+    r1 = kappa_eff*nubar/omega_eff**2
+    r2 = sigp(args,params)**2*nubar**2/omega_eff**4
+    r3 = sigd(args,params)**2/omega_eff**2
 
     RHS = np.asarray([(np.sqrt(omega_eff**2+4*kappa_eff*nubar)
                        -2*(nubar**2*sigp(args,params)**2-kappa_eff*nubar*sigd(args,params)**2)/
                           ((omega_eff**2+4*kappa_eff*nubar)**(3/2))),
-                     w1(DelN(args,params)),
-                     omega_eff**2+4*kappa_eff*nubar+sigd(args,params)**2,
-                     w2(DelN(args,params)),
+                     (sigN(args,params)/(chi*params['sigc']**2*R))*w1(DelN(args,params)),
+                     (omega_eff**2/(2*nubar**2))*(1-np.sqrt(1+4*r1)+2*r1
+                        +(1+4*r1)**(-3/2)*(r3+4*r2)+r3),
+                     (sigN(args,params)/(chi*params['sigc']**2*R))**2*w2(DelN(args,params)),
                      (((omega_eff**2+4*kappa_eff*nubar)**2
                         +(omega_eff**2-2*kappa_eff**2*nubar)
                         *sigd(args,params)**2+6*nubar**2*sigp(args,params)**2)
@@ -93,7 +120,7 @@ def cost_function(args,params):
 #Enforce competitive exclusion bounds and keep moments within reasonable values
 def cost_function_bounded(args,params):
     b1 = test_bound_1(args,params)
-    if np.isfinite(b1) and np.isfinite(b2):
+    if np.isfinite(b1):
         if b1>0 and np.all(args>=0):
             return cost_function(args,params)
         else:
@@ -118,106 +145,70 @@ def dRdt(N,R,params):
     return usertools.MakeResourceDynamics(assumptions)(N,R,params)
 
 #Run community to steady state, extract moments of steady state, plot results
-def RunCommunity(assumptions,M,plotting=False,eps=1e-5,trials=1,postprocess=False,
-                 Stot=100,run_number=0,cutoff=1e-5,max_iter=20):
+def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
+                 run_number=0,cutoff=1e-5,max_iter=3):
     
-    assumptions['waste_type'] = 0
-    assumptions['MA'] = M
-    assumptions['Sgen'] = 0
-    assumptions['SA'] = Stot
-    if assumptions['sampling'] == 'Binary':
-        p_c = 1/((S*params['sigc']**2/params['muc']**2)+1)
-        params['c1'] = params['muc']/(S*p_c)
-    params = usertools.MakeParams(assumptions)
-    params['omega'] = 1/params['tau']
-    params['sigw'] = 0
-    params['sigD'] = np.sqrt((params['sparsity']/(params['sparsity']+1))*((M-1)/M))
-    params['kappa'] = np.mean(params['R0']/params['tau'])
-    params['mug'] = 1
-    params['sigg'] = 0
-    S = int(round(M/assumptions['gamma']))
-    N0,R0 = MakeInitialState['assumptions']
-
     fun = np.inf
     k=0
     while fun > eps and k < max_iter:
+        assumptions['waste_type'] = 0
+        assumptions['MA'] = M
+        assumptions['Sgen'] = 0
+        S = int(round(M/assumptions['gamma']))
+        Stot = S*2
+        assumptions['SA'] = Stot
+        if assumptions['sampling'] == 'Binary':
+            p_c = 1/((S*assumptions['sigc']**2/assumptions['muc']**2)+1)
+            assumptions['c1'] = assumptions['muc']/(S*p_c)
+        params = usertools.MakeParams(assumptions)
+        params['R0'] = assumptions['R0']
+        assumptions['omega'] = 1/assumptions['tau']
+        assumptions['sigw'] = 0
+        assumptions['sigD'] = np.sqrt((assumptions['sparsity']/(assumptions['sparsity']+1))*((M-1)/M))
+        assumptions['kappa'] = np.mean(assumptions['R0']/assumptions['tau'])
+        assumptions['mug'] = 1
+        assumptions['sigg'] = 0
+        N0,R0 = usertools.MakeInitialState(assumptions)
+
+    
         TestPlate = Community([N0,R0],[dNdt,dRdt],params)
         TestPlate.SteadyState()
     
         #Find final states
+        chi = np.mean([analysis.chi_diag(TestPlate.N[well].values,TestPlate.R[well].values,params) 
+            for well in TestPlate.N.keys()])
         Rfinal = TestPlate.R.values.reshape(-1)
         Nfinal = TestPlate.N.values.reshape(-1)
     
         #Compute moments for feeding in to cavity calculation
-        args0 = (Stot*1./S)*np.asarray([np.mean(Rfinal)/params['gamma'], 
-                                        np.mean(Nfinal), 
-                                        np.mean(Rfinal**2)/params['gamma'], 
-                                        np.mean(Nfinal**2),
-                                        chi])+1e-10
-
-        ###STOPPED HERE### Need to find chi, and then complete the output extraction
+        args0 = np.asarray([np.mean(Rfinal)/assumptions['gamma'], 
+                            (Stot*1./S)*np.mean(Nfinal), 
+                            np.mean(Rfinal**2)/assumptions['gamma'], 
+                            (Stot*1./S)*np.mean(Nfinal**2),
+                            chi])+1e-10
         
-        if np.max(Nfinal) < cutoff:
-            args_cav= [w1(params['K']/params['sigK'])*params['sigK'],0,0,w2(params['K']/params['sigK'])*params['sigK']**2,0,0]
-            fun = 0
-        elif np.max(Xfinal) < cutoff:
-            args0_temp = np.asarray(args0)[[0,1,3,4]]
-            out = opt.minimize(cost_function_no_pred,args0_temp,args=(params,))
-            args_cav = np.asarray([out.x[0],out.x[1],0,out.x[2],out.x[3],0])
-            fun = out.fun
-        else:
-            out = opt.minimize(cost_function_bounded,args0,args=(params,))
-            args_cav = out.x
-            fun = out.fun
+        out = opt.minimize(cost_function_bounded,args0,args=(assumptions,))
+        args_cav = out.x
+        fun = out.fun
         k += 1
     if fun > eps:
-        args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan]
         fun = np.nan
-    
-    if plotting:
-        f, axs = plt.subplots(3,1,figsize=(12,10))
-        
-        bins = np.linspace(-200,5,100)
-        axs[0].hist(np.log(Rfinal[Rfinal>0]),bins=bins,alpha=0.5,label='Resource')
-        axs[0].hist(np.log(Nfinal[Nfinal>0]),bins=bins,alpha=0.5,label='Consumer')
-        axs[0].hist(np.log(Xfinal[Xfinal>0]),bins=bins,alpha=0.5,label='Predator')
-        axs[0].set_xlabel('Log Species Abundance')
-
-        bins = np.linspace(0,5,20)
-        xvec = np.linspace(0,5,100)
-        dbin = bins[1]-bins[0]
-        axs[1].hist(Rfinal[Rfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[0],label='Resource')
-        axs[1].hist(Nfinal[Nfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[1],label='Consumer')
-        axs[1].hist(Xfinal[Xfinal>cutoff],bins=bins,alpha=0.5,color=sns.color_palette()[2],label='Predator')
-        axs[1].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M*dbin*trials,color=sns.color_palette()[0])
-        axs[1].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S*dbin*trials,color=sns.color_palette()[1])
-        axs[1].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q*dbin*trials,color=sns.color_palette()[2])
-        axs[1].set_xlabel('Non-extinct Species Abundance')
-        
-        #Compare initial and final values in optimization
-        axs[2].plot(xvec,Ral(args0,params,Rvec=xvec)*M,color=sns.color_palette()[0],alpha=0.2)
-        axs[2].plot(xvec,Ni(args0,params,Nvec=xvec)*S,color=sns.color_palette()[1],alpha=0.2)
-        axs[2].plot(xvec,Xa(args0,params,Xvec=xvec)*Q,color=sns.color_palette()[2],alpha=0.2)
-        axs[2].plot(xvec,Ral(args_cav,params,Rvec=xvec)*M,color=sns.color_palette()[0],label='Resource')
-        axs[2].plot(xvec,Ni(args_cav,params,Nvec=xvec)*S,color=sns.color_palette()[1],label='Consumer')
-        axs[2].plot(xvec,Xa(args_cav,params,Xvec=xvec)*Q,color=sns.color_palette()[2],label='Predator')
-        axs[2].set_xlabel('Non-extinct Species Abundance')
-        plt.legend()
     
     if postprocess:
         results_num = {'SphiN':np.sum(Nfinal>cutoff)*1./trials,
-                       'MphiR':np.sum(Rfinal>cutoff)*1./trials,
-                       'QphiX':np.sum(Xfinal>cutoff)*1./trials,
                        'M<R>':M*args0[0],
                        'S<N>':S*args0[1],
-                       'Q<X>':Q*args0[2]}
-        results_cav = {'SphiN':S*phiN(args_cav,params),
-                       'MphiR':M*phiR(args_cav,params),
-                       'QphiX':Q*phiX(args_cav,params),
+                       'MqR':M*args0[2],
+                       'SqN':S*args0[3],
+                       'chi':args0[4]}
+        results_cav = {'SphiN':S*phiN(args_cav,assumptions),
                        'M<R>':M*args_cav[0],
                        'S<N>':S*args_cav[1],
-                       'Q<X>':Q*args_cav[2]}
-        return results_num, results_cav, out
+                       'MqR':M*args_cav[2],
+                       'SqN':S*args_cav[3],
+                       'chi':args_cav[4]}
+        return results_num, results_cav, out, args0, assumptions
     else:
         Stot = len(N0)
         new_index = [Stot*['Consumer'],N0.index]
@@ -228,15 +219,15 @@ def RunCommunity(assumptions,M,plotting=False,eps=1e-5,trials=1,postprocess=Fals
         final_state = final_state.reorder_levels(['Run Number',0,1])
         final_state.index.names=[None,None,None]
         
-        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<X>','<R^2>','<N^2>','<X^2>'],index=[run_number])
+        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>','chi'],index=[run_number])
         data['fun']=fun
-        for item in params.keys():
-            data[item]=params[item]
-        for item in ['S','M','Q']:
-            data[item]=com_params[item]
+        for item in assumptions.keys():
+            data[item]=assumptions[item]
+        data['S'] = S
+        data['M'] = M
         
-        sim_index = [Stot*['m']+Stot*['R0']+Stot*['u'],3*list(range(Stot))]
-        sim_params = pd.DataFrame(np.hstack((com_params['m'],com_params['R0'][:Stot],com_params['u'][Stot:])),columns=data.index,index=sim_index).T
+        sim_index = [Stot*['m']+M*['R0'],list(range(Stot))+list(range(M))]
+        sim_params = pd.DataFrame(np.hstack((params['m'],params['R0'])),columns=data.index,index=sim_index).T
 
         c_matrix = pd.DataFrame(com_params['c'],columns=TestPlate.R.index,index=N0.index)
         c_matrix['Run Number']=run_number

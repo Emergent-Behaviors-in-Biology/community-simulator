@@ -299,6 +299,14 @@ def MakeParams(assumptions):
         for item in ['m','w','g','l','tau','r','sigma_max','n','nreg']:
             if item in assumptions.keys():
                 params[item] = assumptions[item]
+        if 'sigm' in assumptions.keys():
+            params['m'] = params['m'] + assumptions['sigm']*np.random.randn(len(N0))
+        if 'sigw' in assumptions.keys():
+            params['w'] = params['w'] + assumptions['sigw']*np.random.randn(len(R0))
+        if 'sigl' in assumptions.keys():
+            params['l'] = params['l'] + assumptions['sigl']*np.random.randn(len(R0))
+        if 'sigg' in assumptions.keys():
+            params['g'] = params['g'] + assumptions['sigg']*np.random.randn(len(N0))
 
     return params
 
