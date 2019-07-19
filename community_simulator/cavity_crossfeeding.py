@@ -76,46 +76,20 @@ def cost_vector(args,params):
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
     nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
     r1 = kappa_eff*nubar/omega_eff**2
-    r2 = sigp(args,params)**2*nubar**2/omega_eff**4
-    r3 = sigd(args,params)**2/omega_eff**2
+    eps_pw = sigp(args,params)**2*nubar**2/omega_eff**4
+    eps_d = sigd(args,params)**2/omega_eff**2
 
-    RHS = np.asarray([(np.sqrt(omega_eff**2+4*kappa_eff*nubar)
-                       -2*(nubar**2*sigp(args,params)**2-kappa_eff*nubar*sigd(args,params)**2)/
-                          ((omega_eff**2+4*kappa_eff*nubar)**(3/2))),
-                     (sigN(args,params)/(chi*params['sigc']**2*R))*w1(DelN(args,params)),
-                     (omega_eff**2/(2*nubar**2))*(1-np.sqrt(1+4*r1)+2*r1
-                        +(1+4*r1)**(-3/2)*(r3+4*r2)+r3),
-                     (sigN(args,params)/(chi*params['sigc']**2*R))**2*w2(DelN(args,params)),
-                     (((omega_eff**2+4*kappa_eff*nubar)**2
-                        +(omega_eff**2-2*kappa_eff**2*nubar)
-                        *sigd(args,params)**2+6*nubar**2*sigp(args,params)**2)
-                     /(omega_eff**2+4*kappa_eff*nubar)**(5/2))])
+    RHS = np.asarray([(omega_eff/(2*nubar))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
+                     (sigN(args,params)/((1-params['l'])*params['mug']*chi*params['sigc']**2*R))*w1(DelN(args,params)),
+                     (omega_eff**2/(2*nubar**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2)),
+                     (sigN(args,params)/((1-params['l'])*params['mug']*chi*params['sigc']**2*R))**2*w2(DelN(args,params)),
+                     (1/omega_eff)*((1/np.sqrt(1+4*r1))+((1-2*r1)*eps_d+6*eps_pw)/(1+4*r1)**(5/2))])
     
     return RHS
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(args,params):
-    R,N,qR,qN,chi = args
-    omega_eff = params['omega']+params['muc']*N/params['gamma']
-    kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
-    r1 = kappa_eff*nubar/omega_eff**2
-    r2 = sigp(args,params)**2*nubar**2/omega_eff**4
-    r3 = sigd(args,params)**2/omega_eff**2
-
-    RHS = np.asarray([(np.sqrt(omega_eff**2+4*kappa_eff*nubar)
-                       -2*(nubar**2*sigp(args,params)**2-kappa_eff*nubar*sigd(args,params)**2)/
-                          ((omega_eff**2+4*kappa_eff*nubar)**(3/2))),
-                     (sigN(args,params)/(chi*params['sigc']**2*R))*w1(DelN(args,params)),
-                     (omega_eff**2/(2*nubar**2))*(1-np.sqrt(1+4*r1)+2*r1
-                        +(1+4*r1)**(-3/2)*(r3+4*r2)+r3),
-                     (sigN(args,params)/(chi*params['sigc']**2*R))**2*w2(DelN(args,params)),
-                     (((omega_eff**2+4*kappa_eff*nubar)**2
-                        +(omega_eff**2-2*kappa_eff**2*nubar)
-                        *sigd(args,params)**2+6*nubar**2*sigp(args,params)**2)
-                     /(omega_eff**2+4*kappa_eff*nubar)**(5/2))])
-    
-    return np.sum((args-RHS)**2)
+    return np.sum((args-cost_vector(args,params))**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
 def cost_function_bounded(args,params):
