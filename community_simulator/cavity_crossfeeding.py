@@ -54,8 +54,8 @@ def nu(args,params):
     R,N,qR,qN = args
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    r2 = kappa_eff*phiN(args,params)/(omega_eff*R)
-    nu0 = (2*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
+    r2 = kappa_eff*phiN(args,params)/(params['gamma']*omega_eff*R)
+    nu0 = (2*params['gamma']**(-2)*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
     r1 = kappa_eff*nu0/omega_eff**2
     eps_pk = sigp(args,params)**2/kappa_eff**2
     eps_d = sigd(args,params)**2/omega_eff**2
@@ -65,9 +65,9 @@ def chi(args,params):
     R,N,qR,qN = args
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    r2 = kappa_eff*phiN(args,params)/(omega_eff*R)
-    chi0 = (R/(2*phiN(args,params)*kappa_eff))/(1+np.sqrt(1+(2*r2)**(-2)))
-    nu0 = (2*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
+    r2 = kappa_eff*phiN(args,params)/(params['gamma']*omega_eff*R)
+    nu0 = (2*params['gamma']**(-2)*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
+    chi0 = (R*params['gamma']/(2*phiN(args,params)*kappa_eff))/(1+np.sqrt(1+(2*r2)**(-2)))
     r1 = kappa_eff*nu0/omega_eff**2
     eps_pk = sigp(args,params)**2/kappa_eff**2
     eps_d = sigd(args,params)**2/omega_eff**2
@@ -86,7 +86,7 @@ def cost_vector(args,params):
     R,N,qR,qN = args
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
+    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2/params['gamma']
     r1 = kappa_eff*nubar/omega_eff**2
     eps_pw = sigp(args,params)**2*nubar**2/omega_eff**4
     eps_d = sigd(args,params)**2/omega_eff**2
@@ -101,7 +101,7 @@ def cost_vector(args,params):
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(args,params):
     args = np.exp(args)
-    return np.sum((args-cost_vector(args,params))**2/args**2)
+    return np.sum((args-cost_vector(args,params))**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
 # def cost_function_bounded(args,params):
@@ -176,7 +176,7 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         out = opt.minimize(cost_function,np.log(args0),args=(assumptions,),bounds=(
             (-10,10),(-10,10),(-10,10),(-10,10)))
         args_cav = np.exp(out.x)
-        fun = out.fun
+        fun = out.fun/np.sum(args0**2)
         k += 1
     if fun > eps:
         args_cav = [np.nan,np.nan,np.nan,np.nan]
