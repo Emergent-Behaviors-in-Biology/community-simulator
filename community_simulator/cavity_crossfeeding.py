@@ -28,42 +28,62 @@ def w2(Delta):
 
 #Standard deviations of invasion growth rates
 def sigN(args,params):
-    R,N,qR,qN,chi = args
+    R,N,qR,qN = args
     return np.sqrt(params['sigm']**2 + (1-params['l'])**2*params['sigc']**2
                   *(params['mug']**2+params['sigg']**2)*qR)
 def sigd(args,params):
-    R,N,qR,qN,chi = args
+    R,N,qR,qN = args
     return np.sqrt(params['sigw']**2 + params['sigc']**2*qN/params['gamma'])
 def sigp(args,params):
-    R,N,qR,qN,chi = args
+    R,N,qR,qN = args
     return np.sqrt(params['l']**2*(params['sigc']**2*params['sigD']**2*qR*qN+
                                    params['muc']**2*params['sigD']**2*N**2*qR/params['gamma'])
                                    /params['gamma'])
 
 #Mean invasion growth rates normalized by standard deviation
 def DelN(args,params):
-    R,N,qR,qN,chi = args
+    R,N,qR,qN = args
     return ((1-params['l'])*params['muc']*params['mug']*R-params['m'])/sigN(args,params)
 
 #Fraction of species that survive in steady state
 def phiN(args,params):
     return w0(DelN(args,params))
 
-#Factors for converting invasion growth rate to steady-state abundance
-def fN(args,params):
-    R,N,qR,qN,chi = args
-    return ((1-params['l'])*params['mug']*chi*params['sigc']**2*R)**(-1)
-
 #Susceptibilities
 def nu(args,params):
-    return phiN(args,params)*fN(args,params)
+    R,N,qR,qN = args
+    omega_eff = params['omega']+params['muc']*N/params['gamma']
+    kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
+    r2 = kappa_eff*phiN(args,params)/(omega_eff*R)
+    nu0 = (2*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
+    r1 = kappa_eff*nu0/omega_eff**2
+    eps_pk = sigp(args,params)**2/kappa_eff**2
+    eps_d = sigd(args,params)**2/omega_eff**2
+    return nu0*(1-(6*r1**2*eps_pk-(2*r1-1)*eps_d)/(6*r1**3*r2**(-2)+r1**2*r2**(-2)-16*r1**2-8*r1))
+
+def chi(args,params):
+    R,N,qR,qN = args
+    omega_eff = params['omega']+params['muc']*N/params['gamma']
+    kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
+    r2 = kappa_eff*phiN(args,params)/(omega_eff*R)
+    chi0 = (R/(2*phiN(args,params)*kappa_eff))/(1+np.sqrt(1+(2*r2)**(-2)))
+    nu0 = (2*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
+    r1 = kappa_eff*nu0/omega_eff**2
+    eps_pk = sigp(args,params)**2/kappa_eff**2
+    eps_d = sigd(args,params)**2/omega_eff**2
+    return chi0*(1+(6*r1**2*eps_pk-(2*r1-1)*eps_d)/(6*r1**3*r2**(-2)+r1**2*r2**(-2)-16*r1**2-8*r1))
+
+#Factors for converting invasion growth rate to steady-state abundance
+def fN(args,params):
+    R,N,qR,qN = args
+    return ((1-params['l'])*params['mug']*chi(args,params)*params['sigc']**2*R)**(-1)
 
 #Test satisfaction of competitive exclusion bound for consumers and predators
 def test_bound_1(args,params):
     return params['gamma']-phiN(args,params)
 
 def cost_vector(args,params):
-    R,N,qR,qN,chi = args
+    R,N,qR,qN = args
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
     nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
@@ -74,8 +94,7 @@ def cost_vector(args,params):
     RHS = np.asarray([(omega_eff/(2*nubar))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
                      fN(args,params)*sigN(args,params)*w1(DelN(args,params)),
                      (omega_eff**2/(2*nubar**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2)),
-                     (fN(args,params)*sigN(args,params))**2*w2(DelN(args,params)),
-                     (1/omega_eff)*((1/np.sqrt(1+4*r1))+((1-2*r1)*eps_d+6*eps_pw)/(1+4*r1)**(5/2))])
+                     (fN(args,params)*sigN(args,params))**2*w2(DelN(args,params))])
     
     return RHS
 
@@ -144,8 +163,6 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         TestPlate.SteadyState()
     
         #Find final states
-        chi = np.mean([analysis.chi_diag(TestPlate.N[well].values,TestPlate.R[well].values,params) 
-            for well in TestPlate.N.keys()])
         Rfinal = TestPlate.R.values.reshape(-1)
         Nfinal = TestPlate.N.values.reshape(-1)
         Nfinal[Nfinal<cutoff] = 0
@@ -154,16 +171,15 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         args0 = np.asarray([np.mean(Rfinal), 
                             (Stot*1./S)*np.mean(Nfinal), 
                             np.mean(Rfinal**2), 
-                            (Stot*1./S)*np.mean(Nfinal**2),
-                            chi])+1e-10
+                            (Stot*1./S)*np.mean(Nfinal**2)])+1e-10
         
         out = opt.minimize(cost_function,np.log(args0),args=(assumptions,),bounds=(
-            (-10,10),(-10,10),(-10,10),(-10,10),(-10,10)))
+            (-10,10),(-10,10),(-10,10),(-10,10)))
         args_cav = np.exp(out.x)
         fun = out.fun
         k += 1
     if fun > eps:
-        args_cav = [np.nan,np.nan,np.nan,np.nan,np.nan]
+        args_cav = [np.nan,np.nan,np.nan,np.nan]
         fun = np.nan
     
     if postprocess:
@@ -171,14 +187,12 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
                        'M<R>':M*args0[0],
                        'S<N>':S*args0[1],
                        'MqR':M*args0[2],
-                       'SqN':S*args0[3],
-                       'chi':args0[4]}
+                       'SqN':S*args0[3]}
         results_cav = {'SphiN':S*phiN(args_cav,assumptions),
                        'M<R>':M*args_cav[0],
                        'S<N>':S*args_cav[1],
                        'MqR':M*args_cav[2],
-                       'SqN':S*args_cav[3],
-                       'chi':args_cav[4]}
+                       'SqN':S*args_cav[3]}
         return results_num, results_cav, out, args0, assumptions, Rfinal, Nfinal
     else:
         Stot = len(N0)
@@ -190,7 +204,7 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         final_state = final_state.reorder_levels(['Run Number',0,1])
         final_state.index.names=[None,None,None]
         
-        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>','chi'],index=[run_number])
+        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
         data['fun']=fun
         for item in assumptions.keys():
             data[item]=assumptions[item]
