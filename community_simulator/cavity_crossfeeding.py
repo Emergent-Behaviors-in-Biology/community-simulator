@@ -37,7 +37,7 @@ def sigd(args,params):
 def sigp(args,params):
     R,N,qR,qN,chi = args
     return np.sqrt(params['l']**2*(params['sigc']**2*params['sigD']**2*qR*qN+
-                                   params['muc']**2*params['sigD']**2*N**2*qR)
+                                   params['muc']**2*params['sigD']**2*N**2*qR/params['gamma'])
                                    /params['gamma'])
 
 #Mean invasion growth rates normalized by standard deviation
@@ -52,19 +52,11 @@ def phiN(args,params):
 #Factors for converting invasion growth rate to steady-state abundance
 def fN(args,params):
     R,N,qR,qN,chi = args
-    return (chi*params['sigc']**2*R)**(-1)
+    return ((1-params['l'])*params['mug']*chi*params['sigc']**2*R)**(-1)
 
 #Susceptibilities
 def nu(args,params):
     return phiN(args,params)*fN(args,params)
-def chi(args,params):
-    R,N,qR,qN,nu,chi = args
-    omega_eff = params['omega']+params['muc']*N/params['gamma']
-    kappa_eff = params['kappa'] + params['l']*params['muc']*N*R/params['gamma']
-    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
-    return (((omega_eff**2+4*kappa_eff*nubar)**2 + (omega_eff**2-2*kappa_eff**2*nubar)
-            *sigd(args,params)**2+6*nubar**2*sigp(args,params)**2)/
-            (omega_eff**2+4*kappa_eff*nubar)**(5/2))
 
 #Test satisfaction of competitive exclusion bound for consumers and predators
 def test_bound_1(args,params):
@@ -80,27 +72,28 @@ def cost_vector(args,params):
     eps_d = sigd(args,params)**2/omega_eff**2
 
     RHS = np.asarray([(omega_eff/(2*nubar))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
-                     (sigN(args,params)/((1-params['l'])*params['mug']*chi*params['sigc']**2*R))*w1(DelN(args,params)),
+                     fN(args,params)*sigN(args,params)*w1(DelN(args,params)),
                      (omega_eff**2/(2*nubar**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2)),
-                     (sigN(args,params)/((1-params['l'])*params['mug']*chi*params['sigc']**2*R))**2*w2(DelN(args,params)),
+                     (fN(args,params)*sigN(args,params))**2*w2(DelN(args,params)),
                      (1/omega_eff)*((1/np.sqrt(1+4*r1))+((1-2*r1)*eps_d+6*eps_pw)/(1+4*r1)**(5/2))])
     
     return RHS
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(args,params):
-    return np.sum((args-cost_vector(args,params))**2)
+    args = np.exp(args)
+    return np.sum((args-cost_vector(args,params))**2/args**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
-def cost_function_bounded(args,params):
-    b1 = test_bound_1(args,params)
-    if np.isfinite(b1):
-        if b1>0 and np.all(args>=0):
-            return cost_function(args,params)
-        else:
-            return np.inf
-    else:
-        return np.inf
+# def cost_function_bounded(args,params):
+#     b1 = test_bound_1(args,params)
+#     if np.isfinite(b1):
+#         if b1>0 and np.all(args>=0):
+#             return cost_function(args,params)
+#         else:
+#             return np.inf
+#     else:
+#         return np.inf
 
 #############################
 #SOLVE PROBLEM
@@ -120,20 +113,22 @@ def dRdt(N,R,params):
 
 #Run community to steady state, extract moments of steady state, plot results
 def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
-                 run_number=0,cutoff=1e-5,max_iter=3):
+                 run_number=0,cutoff=1e-5,max_iter=1):
     
     fun = np.inf
     k=0
     while fun > eps and k < max_iter:
+        assumptions['n_wells'] = trials
         assumptions['waste_type'] = 0
         assumptions['MA'] = M
         assumptions['Sgen'] = 0
         S = int(round(M/assumptions['gamma']))
         Stot = S*2
+        assumptions['S'] = S
         assumptions['SA'] = Stot
         if assumptions['sampling'] == 'Binary':
-            p_c = 1/((S*assumptions['sigc']**2/assumptions['muc']**2)+1)
-            assumptions['c1'] = assumptions['muc']/(S*p_c)
+            p_c = 1/((M*assumptions['sigc']**2/assumptions['muc']**2)+1)
+            assumptions['c1'] = assumptions['muc']/(M*p_c)
         params = usertools.MakeParams(assumptions)
         params['R0'] = assumptions['R0']
         assumptions['omega'] = 1/assumptions['tau']
@@ -153,16 +148,18 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
             for well in TestPlate.N.keys()])
         Rfinal = TestPlate.R.values.reshape(-1)
         Nfinal = TestPlate.N.values.reshape(-1)
+        Nfinal[Nfinal<cutoff] = 0
     
         #Compute moments for feeding in to cavity calculation
-        args0 = np.asarray([np.mean(Rfinal)/assumptions['gamma'], 
+        args0 = np.asarray([np.mean(Rfinal), 
                             (Stot*1./S)*np.mean(Nfinal), 
-                            np.mean(Rfinal**2)/assumptions['gamma'], 
+                            np.mean(Rfinal**2), 
                             (Stot*1./S)*np.mean(Nfinal**2),
                             chi])+1e-10
         
-        out = opt.minimize(cost_function_bounded,args0,args=(assumptions,))
-        args_cav = out.x
+        out = opt.minimize(cost_function,np.log(args0),args=(assumptions,),bounds=(
+            (-10,10),(-10,10),(-10,10),(-10,10),(-10,10)))
+        args_cav = np.exp(out.x)
         fun = out.fun
         k += 1
     if fun > eps:
@@ -170,7 +167,7 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         fun = np.nan
     
     if postprocess:
-        results_num = {'SphiN':np.sum(Nfinal>cutoff)*1./trials,
+        results_num = {'SphiN':np.sum(Nfinal>0)*1./trials,
                        'M<R>':M*args0[0],
                        'S<N>':S*args0[1],
                        'MqR':M*args0[2],
@@ -182,7 +179,7 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
                        'MqR':M*args_cav[2],
                        'SqN':S*args_cav[3],
                        'chi':args_cav[4]}
-        return results_num, results_cav, out, args0, assumptions
+        return results_num, results_cav, out, args0, assumptions, Rfinal, Nfinal
     else:
         Stot = len(N0)
         new_index = [Stot*['Consumer'],N0.index]
