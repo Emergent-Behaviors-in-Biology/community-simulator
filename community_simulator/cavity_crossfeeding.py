@@ -66,7 +66,7 @@ def cost_vector(args,params):
     R,N,qR,qN,chi = args
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2
+    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2/params['gamma']
     r1 = kappa_eff*nubar/omega_eff**2
     eps_pw = sigp(args,params)**2*nubar**2/omega_eff**4
     eps_d = sigd(args,params)**2/omega_eff**2
