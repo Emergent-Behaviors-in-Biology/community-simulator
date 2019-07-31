@@ -21,6 +21,7 @@ a_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choic
           'q': 0.0, #Preference strength (0 for generalist and 1 for specialist)
           'c0':0.0, #Sum of background consumption rates in binary model
           'c1':1., #Specific consumption rate in binary model
+          'l':0.8, #Leakage fraction
           'fs':0.45, #Fraction of secretion flux with same resource type
           'fw':0.45, #Fraction of secretion flux to 'waste' resource
           'sparsity':0.2, #Effective sparsity of metabolic matrix
