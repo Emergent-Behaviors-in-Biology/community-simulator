@@ -48,6 +48,10 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
     if 'D' in params_comp.keys():
         params_comp['D']=params_comp['D'][not_extinct[S:],:]
         params_comp['D']=params_comp['D'][:,not_extinct[S:]]
+    if 'Di' in params_comp.keys():
+        params_comp['Di']=params_comp['Di'][not_extinct[S:],:,:]
+        params_comp['Di']=params_comp['Di'][:,not_extinct[S:],:]
+        params_comp['Di']=params_comp['Di'][:,:,not_extinct[:S]]
     if 'alpha' in params_comp.keys():
         params_comp['alpha']=params_comp['alpha'][not_extinct[:S],:]
         params_comp['alpha']=params_comp['alpha'][:,not_extinct[:S]]
