@@ -9,9 +9,9 @@ Created on Thu Oct 19 10:40:34 2017
 from setuptools import setup
 
 setup(name='community_simulator',
-      version='0.1',
+      version='1.0',
       description='Simulate batch culture experiments on microbial communities.',
-      url='https://github.com/robertvsiii/community-simulator',
+      url='https://github.com/Emergent-Behaviors-in-Biology/community-simulator',
       author='Robert Marsland III',
       author_email='robertvsiii@gmail.com',
       license='MIT',
