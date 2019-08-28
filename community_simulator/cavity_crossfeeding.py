@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+    #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Thu Nov  9 14:51:13 2017
@@ -154,6 +154,10 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         assumptions['sigw'] = 0
         assumptions['sigD'] = np.sqrt((assumptions['sparsity']/(assumptions['sparsity']+1))*((M-1)/M))
         assumptions['kappa'] = np.mean(assumptions['R0']/assumptions['tau'])
+        if assumptions['single']:
+            params['R0'] = np.zeros(M)
+            params['R0'][0] = assumptions['R0']
+            assumptions['kappa'] = 0
         assumptions['mug'] = 1
         assumptions['sigg'] = 0
         N0,R0 = usertools.MakeInitialState(assumptions)
@@ -195,32 +199,34 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
                        'SqN':S*args_cav[3]}
         return results_num, results_cav, out, args0, assumptions, Rfinal, Nfinal
     else:
-        Stot = len(N0)
-        new_index = [Stot*['Consumer'],N0.index]
-        TestPlate.N.index = new_index
-        final_state = TestPlate.N.append(TestPlate.R)
-        final_state['Run Number']=run_number
-        final_state.set_index('Run Number',append=True,inplace=True)
-        final_state = final_state.reorder_levels(['Run Number',0,1])
-        final_state.index.names=[None,None,None]
+        TestPlate.Reset([N0,R0])
+        return TestPlate
+        # Stot = len(N0)
+        # new_index = [Stot*['Consumer'],N0.index]
+        # TestPlate.N.index = new_index
+        # final_state = TestPlate.N.append(TestPlate.R)
+        # final_state['Run Number']=run_number
+        # final_state.set_index('Run Number',append=True,inplace=True)
+        # final_state = final_state.reorder_levels(['Run Number',0,1])
+        # final_state.index.names=[None,None,None]
         
-        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
-        data['fun']=fun
-        for item in assumptions.keys():
-            data[item]=assumptions[item]
-        data['S'] = S
-        data['M'] = M
+        # data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
+        # data['fun']=fun
+        # for item in assumptions.keys():
+        #     data[item]=assumptions[item]
+        # data['S'] = S
+        # data['M'] = M
         
-        sim_index = [Stot*['m']+M*['R0'],list(range(Stot))+list(range(M))]
-        sim_params = pd.DataFrame(np.hstack((params['m'],params['R0'])),columns=data.index,index=sim_index).T
+        # sim_index = [Stot*['m']+M*['R0'],list(range(Stot))+list(range(M))]
+        # sim_params = pd.DataFrame(np.hstack((params['m'],params['R0'])),columns=data.index,index=sim_index).T
 
-        c_matrix = pd.DataFrame(com_params['c'],columns=TestPlate.R.index,index=N0.index)
-        c_matrix['Run Number']=run_number
-        c_matrix.set_index('Run Number',append=True,inplace=True)
-        c_matrix = c_matrix.reorder_levels(['Run Number',0])
-        c_matrix.index.names=[None,None]
+        # c_matrix = pd.DataFrame(com_params['c'],columns=TestPlate.R.index,index=N0.index)
+        # c_matrix['Run Number']=run_number
+        # c_matrix.set_index('Run Number',append=True,inplace=True)
+        # c_matrix = c_matrix.reorder_levels(['Run Number',0])
+        # c_matrix.index.names=[None,None]
         
-        return data, final_state, sim_params, c_matrix
+        # return data, final_state, sim_params, c_matrix
 
 #############################
 #STUDY RESULTS
