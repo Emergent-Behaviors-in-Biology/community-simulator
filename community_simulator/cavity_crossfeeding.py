@@ -10,6 +10,7 @@ import numpy as np
 from scipy.stats import norm
 from community_simulator import Community,essentialtools,usertools,visualization,analysis
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize_scalar
 import seaborn as sns
 import scipy.optimize as opt
 import pandas as pd
@@ -25,6 +26,8 @@ def w1(Delta):
     return Delta + norm.pdf(-Delta)-Delta*norm.cdf(-Delta)
 def w2(Delta):
     return (Delta**2+1)*(1-norm.cdf(-Delta))+Delta*norm.pdf(-Delta)
+def y(Delta):
+    return w2(Delta)/(w1(Delta)**2)
 
 #Standard deviations of invasion growth rates
 def sigN(args,params):
@@ -136,46 +139,70 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
     
     fun = np.inf
     k=0
+    
+    assumptions['n_wells'] = trials
+    assumptions['waste_type'] = 0
+    assumptions['MA'] = M
+    assumptions['Sgen'] = 0
+    S = int(round(M/assumptions['gamma']))
+    Stot = S*2
+    assumptions['S'] = S
+    assumptions['SA'] = Stot
+    if assumptions['sampling'] == 'Binary':
+        p_c = 1/((M*assumptions['sigc']**2/assumptions['muc']**2)+1)
+        assumptions['c1'] = assumptions['muc']/(M*p_c)
+    assumptions['omega'] = 1/assumptions['tau']
+    assumptions['sigw'] = 0
+    assumptions['sigD'] = np.sqrt((assumptions['sparsity']/(assumptions['sparsity']+1))*((M-1)/M))
+    assumptions['mug'] = 1
+    assumptions['sigg'] = 0
+    
+    if assumptions['single']:
+        #Get closed-form solution for large <N> limit of single
+        args_closed = [np.nan,np.nan,np.nan,np.nan]
+        y0 = assumptions['muc']**2*((1/assumptions['l'])-1)/(assumptions['gamma']*assumptions['sigc']**2)
+        out = minimize_scalar(lambda Delta:(y(Delta)-y0)**2,bracket=[-5,5])
+        DelN = out.x
+        R0 = assumptions['m']/((1-assumptions['l'])*assumptions['mug']*assumptions['muc'])
+        r3 = assumptions['sigc']*DelN/(assumptions['muc']*np.sqrt(assumptions['l']-assumptions['sigD']**2))
+        r4 = assumptions['sigm']*DelN/assumptions['m']
+        R_closed = R0*(1+r3*np.sqrt(1-r4**2))/(1-r3**2)
+        qR_closed = (R_closed**2)/(assumptions['l']-assumptions['sigD']**2)
+        args_closed[0] = R_closed
+        args_closed[2] = qR_closed
+        args_closed[1] = assumptions['R0']/(S*assumptions['m'])
+        args_closed[3] = y(DelN)*(args_closed[1]**2)
+        assumptions['kappa'] = 0
+    else:
+        assumptions['kappa'] = np.mean(assumptions['R0']/assumptions['tau'])
+    
     while fun > eps and k < max_iter:
-        assumptions['n_wells'] = trials
-        assumptions['waste_type'] = 0
-        assumptions['MA'] = M
-        assumptions['Sgen'] = 0
-        S = int(round(M/assumptions['gamma']))
-        Stot = S*2
-        assumptions['S'] = S
-        assumptions['SA'] = Stot
-        if assumptions['sampling'] == 'Binary':
-            p_c = 1/((M*assumptions['sigc']**2/assumptions['muc']**2)+1)
-            assumptions['c1'] = assumptions['muc']/(M*p_c)
         params = usertools.MakeParams(assumptions)
         params['R0'] = assumptions['R0']
-        assumptions['omega'] = 1/assumptions['tau']
-        assumptions['sigw'] = 0
-        assumptions['sigD'] = np.sqrt((assumptions['sparsity']/(assumptions['sparsity']+1))*((M-1)/M))
-        assumptions['kappa'] = np.mean(assumptions['R0']/assumptions['tau'])
         if assumptions['single']:
             params['R0'] = np.zeros(M)
             params['R0'][0] = assumptions['R0']
-            assumptions['kappa'] = 0
-        assumptions['mug'] = 1
-        assumptions['sigg'] = 0
         N0,R0 = usertools.MakeInitialState(assumptions)
-
     
         TestPlate = Community([N0,R0],[dNdt,dRdt],params)
         TestPlate.SteadyState()
     
         #Find final states
-        Rfinal = TestPlate.R.values.reshape(-1)
-        Nfinal = TestPlate.N.values.reshape(-1)
-        Nfinal[Nfinal<cutoff] = 0
+        TestPlate.N[TestPlate.N<cutoff] = 0
+        Rmean = TestPlate.R.mean(axis=0)
+        R2mean = (TestPlate.R**2).mean(axis=0)
+        Nmean = (Stot*1./S)*TestPlate.N.mean(axis=0)
+        N2mean = (Stot*1./S)*(TestPlate.N**2).mean(axis=0)
     
         #Compute moments for feeding in to cavity calculation
-        args0 = np.asarray([np.mean(Rfinal), 
-                            (Stot*1./S)*np.mean(Nfinal), 
-                            np.mean(Rfinal**2), 
-                            (Stot*1./S)*np.mean(Nfinal**2)])+1e-10
+        args0 = np.asarray([np.mean(Rmean),
+                            np.mean(Nmean),
+                            np.mean(R2mean),
+                            np.mean(N2mean)])+1e-10
+        args0_err = np.asarray([np.std(Rmean),
+                                np.std(Nmean),
+                                np.std(R2mean),
+                                np.std(N2mean)])
         
         out = opt.minimize(cost_function,np.log(args0),args=(assumptions,),bounds=(
             (-10,10),(-10,10),(-10,10),(-10,10)))
@@ -187,7 +214,7 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         fun = np.nan
     
     if postprocess:
-        results_num = {'SphiN':np.sum(Nfinal>0)*1./trials,
+        results_num = {'SphiN':np.sum(TestPlate.N.values.reshape(-1)>cutoff)*1./trials,
                        'M<R>':M*args0[0],
                        'S<N>':S*args0[1],
                        'MqR':M*args0[2],
@@ -197,36 +224,38 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
                        'S<N>':S*args_cav[1],
                        'MqR':M*args_cav[2],
                        'SqN':S*args_cav[3]}
-        return results_num, results_cav, out, args0, assumptions, Rfinal, Nfinal
-    else:
-        TestPlate.Reset([N0,R0])
-        return TestPlate
-        # Stot = len(N0)
-        # new_index = [Stot*['Consumer'],N0.index]
-        # TestPlate.N.index = new_index
-        # final_state = TestPlate.N.append(TestPlate.R)
-        # final_state['Run Number']=run_number
-        # final_state.set_index('Run Number',append=True,inplace=True)
-        # final_state = final_state.reorder_levels(['Run Number',0,1])
-        # final_state.index.names=[None,None,None]
-        
-        # data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
-        # data['fun']=fun
-        # for item in assumptions.keys():
-        #     data[item]=assumptions[item]
-        # data['S'] = S
-        # data['M'] = M
-        
-        # sim_index = [Stot*['m']+M*['R0'],list(range(Stot))+list(range(M))]
-        # sim_params = pd.DataFrame(np.hstack((params['m'],params['R0'])),columns=data.index,index=sim_index).T
+        if assumptions['single']:
+            results_closed = {'SphiN':S*w0(DelN),
+                            'M<R>':M*args_closed[0],
+                            'S<N>':S*args_closed[1],
+                            'MqR':M*args_closed[2],
+                            'SqN':S*args_closed[3]}
+        else:
+            results_closed = np.nan
+        return results_num, results_cav, results_closed, out, args0, assumptions
 
-        # c_matrix = pd.DataFrame(com_params['c'],columns=TestPlate.R.index,index=N0.index)
-        # c_matrix['Run Number']=run_number
-        # c_matrix.set_index('Run Number',append=True,inplace=True)
-        # c_matrix = c_matrix.reorder_levels(['Run Number',0])
-        # c_matrix.index.names=[None,None]
-        
-        # return data, final_state, sim_params, c_matrix
+    else:
+
+        data = pd.DataFrame([args_cav],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
+        data['fun']=fun
+        for item in assumptions.keys():
+            data[item]=assumptions[item]
+        data['S'] = S
+        data['M'] = M
+        data['phiN'] = phiN(args_cav,assumptions)
+
+        data_sim = pd.DataFrame([args0],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
+        data_sim['phiN'] = np.mean((TestPlate.N>cutoff).sum(axis=0))/S
+        err_sim = pd.DataFrame([args0_err],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
+        err_sim['phiN'] = np.std((TestPlate.N>cutoff).sum(axis=0))
+        data = data.join(data_sim,rsuffix='_sim').join(err_sim,rsuffix='_sim_err')
+
+        if assumptions['single']:
+            data_closed = pd.DataFrame([args_closed],columns=['<R>','<N>','<R^2>','<N^2>'],index=[run_number])
+            data_closed['phiN'] = w0(DelN)
+            data = data.join(data_closed,rsuffix='_closed')
+
+        return data
 
 #############################
 #STUDY RESULTS
