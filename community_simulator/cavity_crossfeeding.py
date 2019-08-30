@@ -214,8 +214,8 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
     
         #Find final states
         TestPlate.N[TestPlate.N<cutoff] = 0
-        Rmean = TestPlate.R.mean(axis=0)
-        R2mean = (TestPlate.R**2).mean(axis=0)
+        Rmean = TestPlate.R.drop(('T0','R0')).mean(axis=0)
+        R2mean = (TestPlate.R.drop(('T0','R0'))**2).mean(axis=0)
         Nmean = (Stot*1./S)*TestPlate.N.mean(axis=0)
     
         #Compute moments for feeding in to cavity calculation
