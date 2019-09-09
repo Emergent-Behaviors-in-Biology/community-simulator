@@ -91,30 +91,40 @@ def cost_vector(args,params):
     R,N,qR = args
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2/params['gamma']
-    r1 = kappa_eff*nubar/omega_eff**2
-    eps_pw = sigp(args,params)**2*nubar**2/omega_eff**4
+    r1 = kappa_eff*nu(args,params)/omega_eff**2
+    eps_pw = sigp(args,params)**2*nu(args,params)**2/omega_eff**4
     eps_d = sigd(args,params)**2/omega_eff**2
 
-    RHS = np.asarray([(omega_eff/(2*nubar))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
+    RHS = np.asarray([(omega_eff/(2*nu(args,params)))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
                      fN(args,params)*sigN(args,params)*w1(DelN(args,params)),
-                     (omega_eff**2/(2*nubar**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2))])
+                     (omega_eff**2/(2*nu(args,params)**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2))])
     
     return RHS
 
 def cost_vector_single(args,params):
     R,qR = args
-    N = params['N']
+    N = (params['kappaE_M'] - params['omega']*R)*params['gamma']/params['m']
     args = np.asarray([R,N,qR])
     omega_eff = params['omega']+params['muc']*N/params['gamma']
-    kappa_eff = params['kappa']+params['l']*params['muc']*N*R/params['gamma']
-    nubar = nu(args,params)*(1-params['l'])*params['mug']*params['sigc']**2/params['gamma']
-    r1 = kappa_eff*nubar/omega_eff**2
-    eps_pw = sigp(args,params)**2*nubar**2/omega_eff**4
-    eps_d = sigd(args,params)**2/omega_eff**2
+    kappa_eff = params['l']*params['muc']*N*R/params['gamma']
+    r2 = kappa_eff*phiN(args,params)/(params['gamma']*omega_eff*R)
+    nu0 = (2*params['gamma']**(-2)*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
+    chi0 = (R*params['gamma']/(2*phiN(args,params)*kappa_eff))/(1+np.sqrt(1+(2*r2)**(-2)))
+    fN_single = ((1-params['l'])*params['mug']*chi0*params['sigc']**2*R)**(-1)
+    eps_d = (params['omega']+params['muc']*N/params['gamma'])/(params['l']*params['muc']*N/params['gamma']) - 1
+    y0 = ((params['omega']+params['muc']*N/params['gamma'])**2*eps_d-params['sigw']**2)*params['gamma']/(params['sigc']**2)
+    out = minimize_scalar(lambda Delta:(y(Delta)-y0)**2,bracket=[-5,5])
+    DelN_single = out.x
+    RE2_M = ((N/(fN_single*w1(DelN_single)))**2-params['sigm']**2)/((1-params['l'])**2*params['sigc']**2*(params['mug']**2+params['sigg']**2))-qR
+    r1 = kappa_eff*nu0/omega_eff**2
+    eps_pk = sigp(args,params)**2*(1+RE2_M/qR)/kappa_eff**2
+    nu_single = nu0*(1-(6*r1**2*eps_pk-(2*r1-1)*eps_d)/(6*r1**3*r2**(-2)+r1**2*r2**(-2)-16*r1**2-8*r1))
+    chi_single = chi0*(1+(6*r1**2*eps_pk-(2*r1-1)*eps_d)/(6*r1**3*r2**(-2)+r1**2*r2**(-2)-16*r1**2-8*r1))
+    r1 = kappa_eff*nu_single/omega_eff**2
+    eps_pw = sigp(args,params)**2*(1+RE2_M/qR)*nu_single**2/omega_eff**4
 
-    RHS = np.asarray([(omega_eff/(2*nubar))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
-                     (omega_eff**2/(2*nubar**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2))])
+    RHS = np.asarray([(omega_eff/(2*nu_single))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
+                     (omega_eff**2/(2*nu_single**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2))])
     
     return RHS
 
@@ -181,7 +191,8 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
     if assumptions['single']:
         #Get closed-form solution for large <N> limit of single
         args_closed = np.asarray([np.nan,np.nan,np.nan])
-        y0 = assumptions['muc']**2*((1/assumptions['l'])-1)/(assumptions['gamma']*assumptions['sigc']**2)
+        eps_d = 1/assumptions['l'] - 1
+        y0 = assumptions['muc']**2*eps_d/(assumptions['gamma']*assumptions['sigc']**2)
         out = minimize_scalar(lambda Delta:(y(Delta)-y0)**2,bracket=[-5,5])
         #r2 = lambda Delta: assumptions['l']*w0(Delta)/assumptions['gamma']
         #y0 = lambda Delta: (assumptions['muc']**2/(assumptions['gamma']*assumptions['sigc']**2))*((1/assumptions['l'])-(1-r2(Delta)))*(1+4*r2(Delta))**(3/2)
@@ -189,15 +200,15 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         #out = minimize_scalar(lambda Delta:(y(Delta)-y0(Delta))**2,bracket=[-5,5])
 
         DelN_closed = out.x
+        r2 = assumptions['l']*w0(DelN_closed)/assumptions['gamma']
         R0 = assumptions['m']/((1-assumptions['l'])*assumptions['mug']*assumptions['muc'])
-        r3 = assumptions['sigc']*DelN_closed/(assumptions['muc']*np.sqrt(assumptions['l']-assumptions['sigD']**2))
-        r4 = assumptions['sigm']*DelN_closed/assumptions['m']
-        R_closed = R0*(1+r3*np.sqrt(1-r4**2))/(1-r3**2)
-        qR_closed = (R_closed**2)/(assumptions['l']-assumptions['sigD']**2)
+        r3 = assumptions['gamma']**2*assumptions['sigc']**2*r2*(1+eps_d)*DelN_closed/(assumptions['muc']**2*assumptions['l']*w0(DelN_closed)*w1(DelN_closed))
+        R_closed = R0/(1-r3)
+        qR_closed = (R_closed**2/assumptions['l'])*((r2*(1-2*r2+eps_d-6*r2*eps_d)*assumptions['sigc']*assumptions['sigD']*assumptions['gamma']**2/(assumptions['l']*assumptions['muc']*w0(DelN_closed)*w1(DelN_closed)))**2+1)-assumptions['sigm']**2*assumptions['sigD']**2/(assumptions['l']*(1-assumptions['l'])**2*assumptions['sigc']**2*assumptions['mug']**2)
         args_closed[0] = R_closed
         args_closed[2] = qR_closed
         args_closed[1] = assumptions['R0']/(S*assumptions['m'])
-        assumptions['kappa'] = 0
+        assumptions['kappaE_M'] = assumptions['R0']/M
     else:
         assumptions['kappa'] = np.mean(assumptions['R0']/assumptions['tau'])
     
@@ -214,6 +225,7 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
     
         #Find final states
         TestPlate.N[TestPlate.N<cutoff] = 0
+        #RE2_M0 = TestPlate.R.loc[('T0','R0')].mean()**2/M
         Rmean = TestPlate.R.drop(('T0','R0')).mean(axis=0)
         R2mean = (TestPlate.R.drop(('T0','R0'))**2).mean(axis=0)
         Nmean = (Stot*1./S)*TestPlate.N.mean(axis=0)
@@ -228,10 +240,9 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         
         if assumptions['single']:
             bounds = [(np.log(args0[k])-1,np.log(args0[k])+1) for k in [0,2]]
-            assumptions['N'] = args0[1]
             out = opt.minimize(cost_function_single,np.log(args0[[0,2]]),args=(assumptions,),bounds=bounds,tol=1e-8)
             args_cav = np.exp(out.x)
-            args_cav = [args_cav[0],args0[1],args_cav[1]]
+            args_cav = [args_cav[0],(assumptions['kappaE_M'] - assumptions['omega']*args_cav[0])*assumptions['gamma']/assumptions['m'],args_cav[1]]
         else:
             bounds = [(np.log(args_closed[k])-1,np.log(args_closed[k])+1) for k in range(3)]
             out = opt.minimize(cost_function,np.log(args_closed),args=(assumptions,),bounds=bounds,tol=1e-8)
