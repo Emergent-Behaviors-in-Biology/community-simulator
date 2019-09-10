@@ -101,41 +101,23 @@ def cost_vector(args,params):
     
     return RHS
 
-def cost_vector_single(args,params):
-    R,qR = args
-    N = (params['kappaE_M'] - params['omega']*R)*params['gamma']/params['m']
-    args = np.asarray([R,N,qR])
+def cost_function_single(args,params):
+    logR,DelN_single = args
+    R = np.exp(logR)
+    N = (params['gamma']/params['m'])*(params['kappaE_M'] - R*params['omega'])
+    y0 = (params['omega']+params['muc']*N*(1-params['l'])/params['gamma'])*(params['omega']+params['muc']*N/params['gamma'])**2/(params['muc']*params['sigc']**2*params['l']*N**3/params['gamma']**2) - params['sigw']**2*params['gamma']/(params['sigc']**2*N**2)
     omega_eff = params['omega']+params['muc']*N/params['gamma']
     kappa_eff = params['l']*params['muc']*N*R/params['gamma']
-    r2 = kappa_eff*phiN(args,params)/(params['gamma']*omega_eff*R)
-    nu0 = (2*params['gamma']**(-2)*phiN(args,params)**2*kappa_eff/R**2)*(1+np.sqrt(1+(2*r2)**(-2)))
-    chi0 = (R*params['gamma']/(2*phiN(args,params)*kappa_eff))/(1+np.sqrt(1+(2*r2)**(-2)))
-    fN_single = ((1-params['l'])*params['mug']*chi0*params['sigc']**2*R)**(-1)
+    r2 = kappa_eff*w0(DelN_single)/(params['gamma']*omega_eff*R)
     eps_d = (params['omega']+params['muc']*N/params['gamma'])/(params['l']*params['muc']*N/params['gamma']) - 1
-    y0 = ((params['omega']+params['muc']*N/params['gamma'])**2*eps_d-params['sigw']**2)*params['gamma']/(params['sigc']**2)
-    out = minimize_scalar(lambda Delta:(y(Delta)-y0)**2,bracket=[-5,5])
-    DelN_single = out.x
-    RE2_M = ((N/(fN_single*w1(DelN_single)))**2-params['sigm']**2)/((1-params['l'])**2*params['sigc']**2*(params['mug']**2+params['sigg']**2))-qR
-    r1 = kappa_eff*nu0/omega_eff**2
-    eps_pk = sigp(args,params)**2*(1+RE2_M/qR)/kappa_eff**2
-    nu_single = nu0*(1-(6*r1**2*eps_pk-(2*r1-1)*eps_d)/(6*r1**3*r2**(-2)+r1**2*r2**(-2)-16*r1**2-8*r1))
-    chi_single = chi0*(1+(6*r1**2*eps_pk-(2*r1-1)*eps_d)/(6*r1**3*r2**(-2)+r1**2*r2**(-2)-16*r1**2-8*r1))
-    r1 = kappa_eff*nu_single/omega_eff**2
-    eps_pw = sigp(args,params)**2*(1+RE2_M/qR)*nu_single**2/omega_eff**4
+    R_RHS = (params['m']/((1-params['l'])*params['mug']*params['muc']))/(1 - params['sigc']**2*r2*(1+eps_d)*DelN_single*params['gamma']**2/(params['muc']**2*params['l']*w0(DelN_single)*w1(DelN_single)))
 
-    RHS = np.asarray([(omega_eff/(2*nu_single))*(np.sqrt(1+4*r1)-1-2*(eps_pw-r1*eps_d)/(1+4*r1)**(3/2)),
-                     (omega_eff**2/(2*nu_single**2))*(1+2*r1-np.sqrt(1+4*r1)+eps_d*(1-(1+6*r1)/((1+4*r1)**(3/2)))+2*eps_pw/(1+4*r1)**(3/2))])
-    
-    return RHS
+    return (y0-y(DelN_single))**2 + (R-R_RHS)**2
 
 #Return sum of squared differences between RHS and LHS of self-consistency eqns
 def cost_function(args,params):
     args = np.exp(args)
     return np.sum((args-cost_vector(args,params))**2)
-
-def cost_function_single(args,params):
-    args = np.exp(args)
-    return np.sum((args-cost_vector_single(args,params))**2)
 
 #Enforce competitive exclusion bounds and keep moments within reasonable values
 # def cost_function_bounded(args,params):
@@ -207,8 +189,8 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
         qR_closed = (R_closed**2/assumptions['l'])*((r2*(1-2*r2+eps_d-6*r2*eps_d)*assumptions['sigc']*assumptions['sigD']*assumptions['gamma']**2/(assumptions['l']*assumptions['muc']*w0(DelN_closed)*w1(DelN_closed)))**2+1)-assumptions['sigm']**2*assumptions['sigD']**2/(assumptions['l']*(1-assumptions['l'])**2*assumptions['sigc']**2*assumptions['mug']**2)
         args_closed[0] = R_closed
         args_closed[2] = qR_closed
-        args_closed[1] = assumptions['R0']/(S*assumptions['m'])
         assumptions['kappaE_M'] = assumptions['R0']/M
+        args_closed[1] = (assumptions['kappaE_M'] - assumptions['omega']*R_closed)*assumptions['gamma']/assumptions['m']
     else:
         assumptions['kappa'] = np.mean(assumptions['R0']/assumptions['tau'])
     
@@ -239,31 +221,59 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
                                 np.std(R2mean)])
         
         if assumptions['single']:
-            bounds = [(np.log(args0[k])-1,np.log(args0[k])+1) for k in [0,2]]
-            out = opt.minimize(cost_function_single,np.log(args0[[0,2]]),args=(assumptions,),bounds=bounds,tol=1e-8)
-            args_cav = np.exp(out.x)
-            args_cav = [args_cav[0],(assumptions['kappaE_M'] - assumptions['omega']*args_cav[0])*assumptions['gamma']/assumptions['m'],args_cav[1]]
+            bounds = [(np.log(args0[0])-1,np.log(args0[0])+1), (-5,5)]
+            out = opt.minimize(cost_function_single,[np.log(args0[0]),0],args=(assumptions,),bounds=bounds,tol=1e-8)
+            R_single = np.exp(out.x[0])
+            DelN_cav = out.x[1]
+            N_single = (assumptions['kappaE_M'] - assumptions['omega']*R_single)*assumptions['gamma']/assumptions['m']
+            eps_d = (assumptions['omega']+assumptions['muc']*N_single/assumptions['gamma'])/(assumptions['muc']*assumptions['l']*N_single/assumptions['gamma']) - 1
+            omega_eff = assumptions['omega']+assumptions['muc']*N_single/assumptions['gamma']
+            kappa_eff = assumptions['l']*assumptions['muc']*N_single*R_single/assumptions['gamma']
+            r2 = kappa_eff*w0(DelN_cav)/(assumptions['gamma']*omega_eff*R_single)
+            qR_single = ((assumptions['omega']+assumptions['muc']*N_single/assumptions['gamma'])/(assumptions['muc']*N_single*assumptions['l']/assumptions['gamma']))*(R_single**2*((r2*(1-2*r2+eps_d-6*r2*eps_d)*assumptions['sigc']*assumptions['sigD']*assumptions['gamma']**2/(assumptions['l']*assumptions['muc']*w0(DelN_cav)*w1(DelN_cav)))**2+1)-assumptions['sigm']**2*assumptions['sigD']**2/((1-assumptions['l'])**2*assumptions['sigc']**2*assumptions['mug']**2))
+            qR_adj = (r2*(1-2*r2+eps_d-6*r2*eps_d)*assumptions['sigc']*assumptions['gamma']**2/(assumptions['l']*assumptions['muc']*w0(DelN_cav)*w1(DelN_cav)))**2*R_single**2 - assumptions['sigm']**2/((1-assumptions['l'])**2*assumptions['sigc']**2*assumptions['mug']**2)
+            args_cav = [R_single,N_single,qR_single]
         else:
             bounds = [(np.log(args_closed[k])-1,np.log(args_closed[k])+1) for k in range(3)]
             out = opt.minimize(cost_function,np.log(args_closed),args=(assumptions,),bounds=bounds,tol=1e-8)
             #ranges = [(np.log(args_closed[k])-1,np.log(args_closed[k])+1) for k in range(4)]
             #out = opt.brute(cost_function,ranges,Ns=100,args=(assumptions,),workers=-1)
             args_cav = np.exp(out.x)
+            DelN_cav = DelN(args_cav,assumptions)
+            qR_adj = args_cav[2]
+            r2 = kappa_eff*w0(DelN_cav)/(assumptions['gamma']*omega_eff*args_cav[0])
+            eps_d = (assumptions['omega']+assumptions['muc']*args_cav[1]/assumptions['gamma'])/(assumptions['muc']*assumptions['l']*args_cav[1]/assumptions['gamma']) - 1
         fun = out.fun#/np.sum(args0**2)
         k += 1
     if fun > eps:
         args_cav = [np.nan,np.nan,np.nan]
         fun = np.nan
+
+    N = args_cav[1]
+    qN = N**2*y(DelN_cav)
+    sigd = np.sqrt(assumptions['sigw']**2+assumptions['sigc']**2*qN)
+    sigp = assumptions['l']*assumptions['sigD']*np.sqrt(qR_adj*(assumptions['sigc']**2*qN+assumptions['muc']**2*N**2)/assumptions['gamma'])
+    sigN = np.sqrt(assumptions['sigm']**2 + ((1-assumptions['l'])*assumptions['sigc']*assumptions['mug'])**2*qR_adj)
+    chi = r2*(1-2*r2+eps_d-6*r2*eps_d)*assumptions['gamma']**2/(assumptions['l']*assumptions['muc']*N*w0(DelN_cav))
+    fN = ((1-assumptions['l'])*assumptions['mug']*chi*assumptions['sigc']**2*args_cav[0])**(-1)
+
     
     if postprocess:
         results_num = {'SphiN':np.sum(TestPlate.N.values.reshape(-1)>cutoff)*1./trials,
                        'M<R>':M*args0[0],
                        'S<N>':S*args0[1],
                        'MqR':M*args0[2]}
-        results_cav = {'SphiN':S*phiN(args_cav,assumptions),
+        results_cav = {'SphiN':S*w0(DelN_cav),
                        'M<R>':M*args_cav[0],
                        'S<N>':S*args_cav[1],
-                       'MqR':M*args_cav[2]}
+                       'MqR':M*args_cav[2],
+                       'sigd':sigd,
+                       'sigp':sigp,
+                       'sigN':sigN,
+                       'eps_d':eps_d,
+                       'r2':r2,
+                       'chi':chi,
+                       'fN':fN}
         if assumptions['single']:
             results_closed = {'SphiN':S*w0(DelN_closed),
                             'M<R>':M*args_closed[0],
@@ -281,8 +291,15 @@ def RunCommunity(assumptions,M,eps=1e-5,trials=1,postprocess=True,
             data[item]=assumptions[item]
         data['S'] = S
         data['M'] = M
-        data['phiN'] = phiN(args_cav,assumptions)
-        data['<N^2>'] = y(DelN(args_cav,assumptions))*args_cav[1]**2
+        data['phiN'] = w0(DelN_cav)
+        data['<N^2>'] = qN
+        data['sigd'] = sigd
+        data['sigp'] = sigp
+        data['sigN'] = sigN
+        data['fN'] = fN
+        data['chi'] = chi
+        data['eps_d'] = eps_d
+        data['r2'] = r2
 
         data_sim = pd.DataFrame([args0],columns=['<R>','<N>','<R^2>'],index=[run_number])
         data_sim['phiN'] = np.mean((TestPlate.N>cutoff).sum(axis=0))/S
