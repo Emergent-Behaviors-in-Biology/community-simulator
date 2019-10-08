@@ -308,7 +308,7 @@ class Community:
                         R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
             self.R = pd.DataFrame(R, index = self.R.index, columns = self.R.keys())
         
-    def RunExperiment(self,f,T,np,group='Well',scale=None,refresh_resource=True,
+    def RunExperiment(self,f,T,npass,group='Well',scale=None,refresh_resource=True,
                       compress_resources=False,compress_species=True):
         """
         Repeatedly propagate and passage, simulating a serial transfer experiment.
@@ -318,7 +318,7 @@ class Community:
             
         T = time interval for propagation between transfers
         
-        np = number of repetitions to execute
+        npass = number of repetitions to execute
         
         group = {'Well','Species'} specifies orientation of state matrices for
             saving trajectories. Choosing 'Well' transposes the matrices before
@@ -356,7 +356,7 @@ class Community:
         R_traj = TimeStamp(self.R,t,group=group)
 
         #PASSAGE, PROPAGATE, RECORD
-        for j in range(np):
+        for j in range(npass):
             self.Passage(f,scale=scale,refresh_resource=refresh_resource)
             self.Propagate(T,compress_resources=compress_resources,compress_species=compress_species)
             t += T
