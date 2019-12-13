@@ -88,7 +88,7 @@ def MakeInitialState(assumptions):
     else:
         food_list = np.ones(assumptions['n_wells'],dtype=int)*assumptions['food']
 
-    if not isinstance(assumptions['R0_food'],int):
+    if not (isinstance(assumptions['R0_food'],int) or isinstance(assumptions['R0_food'],float)):
         assert len(assumptions['R0_food']) == assumptions['n_wells'], 'Length of food vector must equal n_wells.'
         R0_food_list = assumptions['R0_food']
     else:
