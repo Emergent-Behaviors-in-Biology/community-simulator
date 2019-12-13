@@ -220,9 +220,24 @@ def MakeMatrices(assumptions):
             thetac = c_var/c_mean
             kc = c_mean**2/c_var
             c.loc['GEN'] = np.random.gamma(kc,scale=thetac,size=(assumptions['Sgen'],M))
+        #PERFORM GAUSSIAN SAMPLING
+    elif assumptions['sampling'] == 'Uniform':
+        #Initialize dataframe:
+        c = pd.DataFrame(np.zeros((S,M)),columns=resource_index,index=consumer_index)
+        #Add uniformly sampled values, biasing consumption of each family towards its preferred resource:
+        for k in range(F):
+            for j in range(T):
+                if k==j:
+                    c_mean = (assumptions['muc']/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
+                else:
+                    c_mean = (assumptions['muc']/M)*(1-assumptions['q'])
+                c.loc['F'+str(k)]['T'+str(j)] = c_mean + (np.random.rand(assumptions['SA'][k],assumptions['MA'][j])-0.5)*assumptions['b']
+        if 'GEN' in c.index:
+            c_mean = assumptions['muc']/M
+            c.loc['GEN'] = c_mean + (np.random.rand(assumptions['Sgen'],M)-0.5)*assumptions['b']
     
     else:
-        print('Invalid distribution choice. Valid choices are kind=Gaussian and kind=Binary.')
+        print('Invalid distribution choice. Valid choices are kind=Gaussian, kind=Binary, kind=Gamma, kind=Uniform.')
         return 'Error'
 
     #SAMPLE METABOLIC MATRIX FROM DIRICHLET DISTRIBUTION
