@@ -17,6 +17,40 @@ try:
 except:
     print('cvxpy not installed. Community.SteadyState() not available.')
     cvxpy_installed = False
+    
+def CompressParams(not_extinct_consumers,not_extinct_resources,params,dimensions,S,M):
+    params_comp = params.copy()
+    if 'SxM' in dimensions.keys():
+        for item in dimensions['SxM']:
+            if item in params_comp.keys():
+                assert np.shape(params_comp[item])==(S,M), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                params_comp[item]=params_comp[item][not_extinct_consumers,:]
+                params_comp[item]=params_comp[item][:,not_extinct_resources]
+    if 'MxM' in dimensions.keys():
+        for item in dimensions['MxM']:
+            if item in params_comp.keys():
+                assert np.shape(params_comp[item])==(M,M), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                params_comp[item]=params_comp[item][not_extinct_resources,:]
+                params_comp[item]=params_comp[item][:,not_extinct_resources]
+    if 'SxS' in dimensions.keys():
+        for item in dimensions['SxS']:
+            if item in params_comp.keys():
+                assert np.shape(params_comp[item])==(S,S), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                params_comp[item]=params_comp[item][not_extinct_consumers,:]
+                params_comp[item]=params_comp[item][:, not_extinct_consumers]
+    if 'S' in dimensions.keys():
+        for item in dimensions['S']:
+            if item in params_comp.keys():
+                if type(params_comp[item]) == np.ndarray:
+                    assert len(params_comp[item])==S, 'Invalid length for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                    params_comp[item]=params_comp[item][not_extinct_consumers]
+    if 'M' in dimensions.keys():
+        for item in dimensions['M']:
+            if item in params_comp.keys():
+                if type(params_comp[item]) == np.ndarray:
+                    assert len(params_comp[item])==M, 'Invalid length for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                    params_comp[item]=params_comp[item][not_extinct_resources]  
+    return params_comp
 
 def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log_time=False,
                   compress_resources=False,compress_species=True):
@@ -31,10 +65,9 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
     
     #UNPACK INPUT
     y0 = well_info['y0']
-    params_comp = well_info['params'].copy()
     
     #COMPRESS STATE AND PARAMETERS TO GET RID OF EXTINCT SPECIES
-    S = params_comp['S']
+    S = well_info['params']['S']
     M = len(y0)-S
     not_extinct = y0>0
     if not compress_species:
@@ -44,38 +77,11 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
     S_comp = np.sum(not_extinct[:S]) #record the new point dividing species from resources
     not_extinct_idx = np.where(not_extinct)[0]
     y0_comp = y0[not_extinct]
+    not_extinct_consumers = not_extinct[:S]
+    not_extinct_resources = not_extinct[S:]
 
     #Compress parameters
-    if 'SxM' in CommunityInstance.dimensions.keys():
-        for item in CommunityInstance.dimensions['SxM']:
-            if item in params_comp.keys():
-                assert np.shape(params_comp[item])==(S,M), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
-                params_comp[item]=params_comp[item][not_extinct[:S],:]
-                params_comp[item]=params_comp[item][:,not_extinct[S:]]
-    if 'MxM' in CommunityInstance.dimensions.keys():
-        for item in CommunityInstance.dimensions['MxM']:
-            if item in params_comp.keys():
-                assert np.shape(params_comp[item])==(M,M), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
-                params_comp[item]=params_comp[item][not_extinct[S:],:]
-                params_comp[item]=params_comp[item][:,not_extinct[S:]]
-    if 'SxS' in CommunityInstance.dimensions.keys():
-        for item in CommunityInstance.dimensions['SxS']:
-            if item in params_comp.keys():
-                assert np.shape(params_comp[item])==(S,S), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
-                params_comp[item]=params_comp[item][not_extinct[:S],:]
-                params_comp[item]=params_comp[item][:,not_extinct[:S]]
-    if 'S' in CommunityInstance.dimensions.keys():
-        for item in CommunityInstance.dimensions['S']:
-            if item in params_comp.keys():
-                if type(params_comp[item]) == np.ndarray:
-                    assert len(params_comp[item])==S, 'Invalid length for ' + item + '. Please update dimensions dictionary with correct dimensions.'
-                    params_comp[item]=params_comp[item][not_extinct[:S]]
-        if 'M' in CommunityInstance.dimensions.keys():
-            for item in CommunityInstance.dimensions['M']:
-                if item in params_comp.keys():
-                    if type(params_comp[item]) == np.ndarray:
-                        assert len(params_comp[item])==M, 'Invalid length for ' + item + '. Please update dimensions dictionary with correct dimensions.'
-                        params_comp[item]=params_comp[item][not_extinct[S:]]
+    params_comp = CompressParams(not_extinct_consumers,not_extinct_resources,well_info['params'],CommunityInstance.dimensions,S,M)
 
     #INTEGRATE AND RESTORE STATE VECTOR TO ORIGINAL SIZE
     if return_all:
@@ -90,7 +96,7 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
         return yf
     
 def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
-                 alpha=0.5,R0t_0=10,verbose=False,max_iters=1000):
+                 alpha=0.5,R0t_0=10,verbose=False,max_iters=1000,dimensions={}):
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
     """
@@ -99,9 +105,10 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
     
     #UNPACK INPUT
     y0 = well_info['y0'].copy()
-    params_comp = well_info['params'].copy()
-    N = y0[:params_comp['S']]
-    R = y0[params_comp['S']:]
+    S = well_info['params']['S']
+    M = len(y0)-S
+    N = y0[:S]
+    R = y0[S:]
     
     #COMPRESS PARAMETERS TO GET RID OF EXTINCT SPECIES
     not_extinct_consumers = N>0
@@ -109,25 +116,13 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
         not_extinct_resources = np.ones(len(R),dtype=bool)
     else:
         not_extinct_resources = R>0
-    params_comp['c']=params_comp['c'][not_extinct_consumers,:]
-    params_comp['c']=params_comp['c'][:,not_extinct_resources]
-    params_comp['D']=params_comp['D'][not_extinct_resources,:]
-    params_comp['D']=params_comp['D'][:,not_extinct_resources]
-    for name in ['m','g','K']:
-        if name in params_comp.keys():
-            if type(params_comp[name]) == np.ndarray:
-                assert len(params_comp[name])==len(N), 'Invalid length for ' + name
-                params_comp[name]=params_comp[name][not_extinct_consumers]
-    for name in ['l','w','r','tau','R0']:
-        if name in params_comp.keys():
-            if type(params_comp[name]) == np.ndarray:
-                assert len(params_comp[name])==len(R), 'Invalid length for ' + name
-                params_comp[name]=params_comp[name][not_extinct_resources]
+    #Compress parameters
+    params_comp = CompressParams(not_extinct_consumers,not_extinct_resources,well_info['params'],dimensions,S,M)    
     S = len(params_comp['c'])
     M = len(params_comp['c'].T)
 
     failed = 0
-    if params_comp['l'] != 0:
+    if np.max(params_comp['l']) != 0:
         assert supply == 'external', 'Replenishment must be external for crossfeeding dynamics.'
         
         #Make Q matrix and effective weight vector

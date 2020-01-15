@@ -185,7 +185,7 @@ class Community:
         #PREPARE OPTIMIZER FOR PARALLEL PROCESSING
         OptimizeTheseWells = partial(OptimizeWell,supply=supply,tol=tol,
                                      shift_size=shift_size,max_iters=max_iters,
-                                     eps=eps,R0t_0=R0t_0,verbose=verbose)
+                                     eps=eps,R0t_0=R0t_0,verbose=verbose,dimensions=self.dimensions)
         
         if self.parallel:
             #INITIALIZE PARALLEL POOL AND SEND EACH WELL TO ITS OWN WORKER
