@@ -44,29 +44,38 @@ def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log
     S_comp = np.sum(not_extinct[:S]) #record the new point dividing species from resources
     not_extinct_idx = np.where(not_extinct)[0]
     y0_comp = y0[not_extinct]
-    if 'c' in params_comp.keys():
-        params_comp['c']=params_comp['c'][not_extinct[:S],:]
-        params_comp['c']=params_comp['c'][:,not_extinct[S:]]
-    if 'D' in params_comp.keys():
-        params_comp['D']=params_comp['D'][not_extinct[S:],:]
-        params_comp['D']=params_comp['D'][:,not_extinct[S:]]
-    if 'Di' in params_comp.keys():
-        params_comp['Di']=params_comp['Di'][not_extinct[S:],:,:]
-        params_comp['Di']=params_comp['Di'][:,not_extinct[S:],:]
-        params_comp['Di']=params_comp['Di'][:,:,not_extinct[:S]]
-    if 'alpha' in params_comp.keys():
-        params_comp['alpha']=params_comp['alpha'][not_extinct[:S],:]
-        params_comp['alpha']=params_comp['alpha'][:,not_extinct[:S]]
-    for name in ['m','g','K']:
-        if name in params_comp.keys():
-            if type(params_comp[name]) == np.ndarray:
-                assert len(params_comp[name])==S, 'Invalid length for ' + name
-                params_comp[name]=params_comp[name][not_extinct[:S]]
-    for name in ['e','w','r','tau','R0']:
-        if name in params_comp.keys():
-            if type(params_comp[name]) == np.ndarray:
-                assert len(params_comp[name])==M, 'Invalid length for ' + name
-                params_comp[name]=params_comp[name][not_extinct[S:]]
+
+    #Compress parameters
+    if 'SxM' in CommunityInstance.dimensions.keys():
+        for item in CommunityInstance.dimensions['SxM']:
+            if item in params_comp.keys():
+                assert np.shape(params_comp[item])==(S,M), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                params_comp[item]=params_comp[item][not_extinct[:S],:]
+                params_comp[item]=params_comp[item][:,not_extinct[S:]]
+    if 'MxM' in CommunityInstance.dimensions.keys():
+        for item in CommunityInstance.dimensions['MxM']:
+            if item in params_comp.keys():
+                assert np.shape(params_comp[item])==(M,M), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                params_comp[item]=params_comp[item][not_extinct[S:],:]
+                params_comp[item]=params_comp[item][:,not_extinct[S:]]
+    if 'SxS' in CommunityInstance.dimensions.keys():
+        for item in CommunityInstance.dimensions['SxS']:
+            if item in params_comp.keys():
+                assert np.shape(params_comp[item])==(S,S), 'Invalid shape for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                params_comp[item]=params_comp[item][not_extinct[:S],:]
+                params_comp[item]=params_comp[item][:,not_extinct[:S]]
+    if 'S' in CommunityInstance.dimensions.keys():
+        for item in CommunityInstance.dimensions['S']:
+            if item in params_comp.keys():
+                if type(params_comp[item]) == np.ndarray:
+                    assert len(params_comp[item])==S, 'Invalid length for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                    params_comp[item]=params_comp[item][not_extinct[:S]]
+        if 'M' in CommunityInstance.dimensions.keys():
+            for item in CommunityInstance.dimensions['M']:
+                if item in params_comp.keys():
+                    if type(params_comp[item]) == np.ndarray:
+                        assert len(params_comp[item])==M, 'Invalid length for ' + item + '. Please update dimensions dictionary with correct dimensions.'
+                        params_comp[item]=params_comp[item][not_extinct[S:]]
 
     #INTEGRATE AND RESTORE STATE VECTOR TO ORIGINAL SIZE
     if return_all:

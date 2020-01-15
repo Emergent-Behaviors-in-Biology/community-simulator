@@ -14,8 +14,17 @@ from multiprocessing import Pool
 from functools import partial
 from .essentialtools import IntegrateWell, OptimizeWell, TimeStamp
 
+#Parameter dimensions for MicroCRM and Lotka-Volterra
+dim_default = {
+                'SxM':['c'],
+                'MxM':['D','Di'],
+                'SxS':['alpha'],
+                'S':['m','g','K'],
+                'M':['e','w','r','tau','R0']
+                }
+
 class Community:
-    def __init__(self,init_state,dynamics,params,scale=10**9,parallel=True):
+    def __init__(self,init_state,dynamics,params,dimensions=dim_default,scale=10**9,parallel=True):
         """
         Initialize a new "96-well plate" for growing microbial communities.
         
@@ -33,11 +42,19 @@ class Community:
             the parameters that required by these functions, and is passed to 
             the new plate instance in the next argument. 
             
-        params was just explained above. Note that the integrator IntegrateWell
-            defined in essentialtools.py assumes that the model has no species-
-            specific parameters other than those employed in the supplied 
-            function constructor found in usertools.py. If additional or different
-            parameters are required, IntegrateWell must be appropriately modified.
+        params = {'name':value,...} is a Python dictionary containing names and values
+            for all parameters. Parameters that are matrices or vectors (such as the
+            consumer preference matrix) should have their dimensions recorded in the
+            next argument. This is done automatically for the parameters of the built-
+            in Microbial Consumer Resource Model, but must be done by hand for custom
+            models.
+
+        dimensions = {'SxM':[name1,name2,...],...} is a dictionary specifying the 
+            dimensions of all the parameters. These are used for compressing 
+            the parameter arrays when species or resources are extinct. See default
+            dictionary above for proper format. Allowed dimensions are SxM, SxS, 
+            MxM, M and S, where M is the number of resource types and S is the number
+            of consumer species.
             
         scale is a conversion factor specifying the number of individual microbial 
             cells present when N = 1. It is used in the Passage method defined 
@@ -102,7 +119,8 @@ class Community:
                 self.params['l'] = 0
             self.params['S'] = self.S
         
-        #SAVE SCALE AND PARALLEL
+        #SAVE DIMENSIONS, SCALE AND PARALLEL
+        self.dimensions = dimensions
         self.scale = scale
         self.parallel = parallel
             
