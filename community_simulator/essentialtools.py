@@ -13,8 +13,10 @@ import time
 import matplotlib.pyplot as plt
 try:
     import cvxpy as cvx
+    cvxpy_installed = True
 except:
     print('cvxpy not installed. Community.SteadyState() not available.')
+    cvxpy_installed = False
 
 def IntegrateWell(CommunityInstance,well_info,T0=0,T=1,ns=2,return_all=False,log_time=False,
                   compress_resources=False,compress_species=True):
@@ -83,6 +85,8 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
     """
     Uses convex optimization to find the steady state of the ecological dynamics.
     """
+
+    assert cvxpy_installed, 'CVXPY not found. To use SteadyState(), please download and install CVXPY from www.cvxpy.org.'
     
     #UNPACK INPUT
     y0 = well_info['y0'].copy()
