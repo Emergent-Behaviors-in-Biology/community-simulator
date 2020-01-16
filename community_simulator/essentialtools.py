@@ -141,7 +141,10 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
             h = np.ones((S,1))*params_comp['m']
         
         #Initialize effective resource concentrations
-        R0t = R0t_0*np.ones(M)
+        if len(np.shape(R0t_0)) == 0:
+            R0t = R0t_0*np.ones(M)
+        else:
+            R0t = R0t_0
         
         #Set up the loop
         Rf = np.inf
