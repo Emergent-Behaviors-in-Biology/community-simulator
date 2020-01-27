@@ -13,21 +13,21 @@ import numbers
 
 #DEFAULT PARAMETERS FOR CONSUMER AND METABOLIC MATRICES, AND INITIAL STATE
 a_default = {'sampling':'Binary', #{'Gaussian','Binary','Gamma'} specifies choice of sampling algorithm
-          'SA': 60*np.ones(3), #Number of species in each family
-          'MA': 30*np.ones(3), #Number of resources of each type
-          'Sgen': 30, #Number of generalist species
-          'muc': 10, #Mean sum of consumption rates
+          'SA': 60*np.ones(3), #Number of species in each specialist family (here, 3 families of 60 species)
+          'MA': 30*np.ones(3), #Number of resources in each class 
+          'Sgen': 30, #Number of generalist species (unbiased sampling over alll resource classes)
+          'muc': 10, #Mean sum of consumption rates (used in all models)
           'sigc': 3, #Standard deviation of sum of consumption rates for Gaussian and Gamma models
-          'q': 0.0, #Preference strength (0 for generalist and 1 for specialist)
+          'q': 0.0, #Preference strength of specialist families (0 for generalist and 1 for specialist)
           'c0':0.0, #Sum of background consumption rates in binary model
           'c1':1., #Specific consumption rate in binary model
           'l':0.8, #Leakage fraction
           'fs':0.45, #Fraction of secretion flux with same resource type
           'fw':0.45, #Fraction of secretion flux to 'waste' resource
-          'sparsity':0.2, #Effective sparsity of metabolic matrix
+          'sparsity':0.2, #Effective sparsity of metabolic matrix (between 0 and 1)
           'n_wells':10, #Number of independent wells
-          'S':100, #Number of species per well
-          'food':0, #index of food source
+          'S':100, #Number of species per well (randomly sampled from the pool of size Stot = sum(SA) + Sgen)
+          'food':0, #index of food source (when a single resource is supplied externally)
           'R0_food':1000, #unperturbed fixed point for supplied food
           'regulation':'independent', #metabolic regulation (see dRdt)
           'response':'type I', #functional response (see dRdt)
