@@ -45,15 +45,15 @@ def CalculateDiversity(df,metadata):
             metadata_new.loc[item,function]=metrics[function](df.loc[item].values)
     return metadata_new
 
-def MakeFlux(metaparams):
+def MakeFlux(assumptions):
     """
     Make function to compute matrix of incoming fluxes as a function of resource
     abundance and parameter dictionary
     """
     
-    sigma = {'type I': lambda R,params: params['c'].values*R,
-             'type II': lambda R,params: params['c'].values*R/(1+params['c'].values*R/params['K']),
-             'type III': lambda R,params: params['c'].values*(R**params['n'])/(1+params['c'].values*(R**params['n'])/params['K'])
+    sigma = {'type I': lambda R,params: params['c']*R,
+             'type II': lambda R,params: params['c']*R/(1+params['c']*R/params['K']),
+             'type III': lambda R,params: params['c']*(R**params['n'])/(1+params['c']*(R**params['n'])/params['K'])
             }
     
     u = {'independent': lambda x,params: 1.,
@@ -62,8 +62,8 @@ def MakeFlux(metaparams):
          'mass': lambda x,params: ((x**params['nreg']).T/np.sum(x**params['nreg'],axis=1)).T
         }
     
-    J_in = lambda R,params: (u[metaparams['regulation']](params['c']*R,params)
-                            *params['w']*sigma[metaparams['response']](R,params))
+    J_in = lambda R,params: (u[assumptions['regulation']](params['c']*R,params)
+                            *params['w']*sigma[assumptions['response']](R,params))
     return J_in
                                                 
 def Susceptibility(N,R,beta,params):
