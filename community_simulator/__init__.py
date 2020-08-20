@@ -95,7 +95,7 @@ class Community:
             for k in range(len(self.params)):
                 for item in self.params[k]:#strip parameters from DataFrames if necessary
                     if isinstance(self.params[k][item],pd.DataFrame):
-                        if item is not 'c':
+                        if item != 'c':
                             self.params[k][item]=self.params[k][item].values.squeeze()
                         else:
                             self.params[k][item]=self.params[k][item].values
@@ -108,7 +108,7 @@ class Community:
         else:
             for item in self.params:#strip parameters from DataFrames if necessary
                 if isinstance(self.params[item],pd.DataFrame):
-                    if item is not 'c':
+                    if item != 'c':
                         self.params[item]=self.params[item].values.squeeze()
                     else:
                         self.params[item]=self.params[item].values
