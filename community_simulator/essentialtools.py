@@ -111,6 +111,8 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
     R = y0[S:]
     
     #COMPRESS PARAMETERS TO GET RID OF EXTINCT SPECIES
+    assert np.isnan(N).sum() == 0, 'All species must have numeric abundances (not NaN).'
+    assert np.isnan(R).sum() == 0, 'All resources must have numeric abundances (not NaN).'
     not_extinct_consumers = N>0
     if supply=='external':
         not_extinct_resources = np.ones(len(R),dtype=bool)
@@ -204,6 +206,7 @@ def OptimizeWell(well_info,supply='external',tol=1e-7,shift_size=1,eps=1e-20,
                 k = max_iters
 
         if k == max_iters:
+            print('Maximum iterations exceeded. Try decreasing alpha to improve convergence.')
             failed = 1
         else:
             if verbose:
