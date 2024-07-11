@@ -278,7 +278,7 @@ def MakeParams(assumptions):
     c, D = MakeMatrices(assumptions)
     N0,R0 = MakeInitialState(assumptions)
     
-    if not isinstance(assumptions['food'],int) or not isinstance(assumptions['R0_food'],int):
+    if not isinstance(assumptions['food'],int) or not isinstance(assumptions['R0_food'],(int,float)):
         params=[{'c':c,
                 'm':1,
                 'w':1,
