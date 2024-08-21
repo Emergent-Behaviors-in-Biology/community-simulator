@@ -120,7 +120,7 @@ def MakeMatrices(assumptions):
         'fs' = fraction of secretion flux into same resource type
         'fw' = fraction of secretion flux into waste resource type
         'sparsity' = effective sparsity of metabolic matrix (from 0 to 1)
-        'wate_type' = index of resource type to designate as "waste"
+        'waste_type' = index of resource type to designate as "waste"
     
     Returns:
     c = consumer matrix
