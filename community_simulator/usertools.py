@@ -170,7 +170,7 @@ def MakeMatrices(assumptions):
                 else:
                     c_mean = (assumptions['muc']/M)*(1-assumptions['q'])
                     c_var = (assumptions['sigc']**2/M)*(1-assumptions['q'])
-                c.loc['F'+str(k)]['T'+str(j)] = c_mean + np.random.randn(assumptions['SA'][k],assumptions['MA'][j])*np.sqrt(c_var)
+                c.loc['F'+str(k),'T'+str(j)] = c_mean + np.random.randn(assumptions['SA'][k],assumptions['MA'][j])*np.sqrt(c_var)
         if 'GEN' in c.index:
             c_mean = assumptions['muc']/M
             c_var = assumptions['sigc']**2/M
@@ -189,7 +189,7 @@ def MakeMatrices(assumptions):
                 else:
                     p = (assumptions['muc']/(M*assumptions['c1']))*(1-assumptions['q'])
                     
-                c.loc['F'+str(k)]['T'+str(j)] = (c.loc['F'+str(k)]['T'+str(j)].values 
+                c.loc['F'+str(k),'T'+str(j)] = (c.loc['F'+str(k),'T'+str(j)].values 
                                                 + assumptions['c1']*BinaryRandomMatrix(assumptions['SA'][k],assumptions['MA'][j],p))
         #Sample uniform binary random matrix for generalists:
         if 'GEN' in c.index:
@@ -207,13 +207,13 @@ def MakeMatrices(assumptions):
                     c_var = (assumptions['sigc']**2/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
                     thetac = c_var/c_mean
                     kc = c_mean**2/c_var
-                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(assumptions['SA'][k],assumptions['MA'][j]))
+                    c.loc['F'+str(k),'T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(assumptions['SA'][k],assumptions['MA'][j]))
                 else:
                     c_mean = (assumptions['muc']/M)*(1-assumptions['q'])
                     c_var = (assumptions['sigc']**2/M)*(1-assumptions['q'])
                     thetac = c_var/c_mean
                     kc = c_mean**2/c_var
-                    c.loc['F'+str(k)]['T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(assumptions['SA'][k],assumptions['MA'][j]))
+                    c.loc['F'+str(k),'T'+str(j)] = np.random.gamma(kc,scale=thetac,size=(assumptions['SA'][k],assumptions['MA'][j]))
         if 'GEN' in c.index:
             c_mean = assumptions['muc']/M
             c_var = assumptions['sigc']**2/M
@@ -231,7 +231,7 @@ def MakeMatrices(assumptions):
                     c_mean = (assumptions['muc']/M)*(1+assumptions['q']*(M-assumptions['MA'][j])/assumptions['MA'][j])
                 else:
                     c_mean = (assumptions['muc']/M)*(1-assumptions['q'])
-                c.loc['F'+str(k)]['T'+str(j)] = c_mean + (np.random.rand(assumptions['SA'][k],assumptions['MA'][j])-0.5)*assumptions['b']
+                c.loc['F'+str(k), 'T'+str(j)] = c_mean + (np.random.rand(assumptions['SA'][k],assumptions['MA'][j])-0.5)*assumptions['b']
         if 'GEN' in c.index:
             c_mean = assumptions['muc']/M
             c.loc['GEN'] = c_mean + (np.random.rand(assumptions['Sgen'],M)-0.5)*assumptions['b']

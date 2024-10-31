@@ -19,7 +19,7 @@ def StackPlot(df,ax=None,labels=False,title=None,drop_zero=True,unique_color=Fal
     
     if drop_zero:
         dfmax = max(df.values.reshape(-1))
-        df = df.loc[(df>0.01*dfmax).any(1)]
+        df = df.loc[(df>0.01*dfmax).any(axis=1)]
     
     if unique_color:
         if random_color:

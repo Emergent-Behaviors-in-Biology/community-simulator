@@ -173,7 +173,7 @@ class Community:
         """
         
         #CONSTRUCT FULL SYSTEM STATE
-        y_in = self.N.append(self.R).values
+        y_in = pd.concat([self.N, self.R]).values 
         
         #PACKAGE SYSTEM STATE AND PARAMETERS IN LIST OF DICTIONARIES
         if not isinstance(self.params,list):
@@ -244,7 +244,7 @@ class Community:
             to compress the parameter matrices properly.
         """
         #CONSTRUCT FULL SYSTEM STATE
-        y_in = self.N.append(self.R).values
+        y_in = pd.concat([self.N, self.R]).values 
         
         #PACKAGE SYSTEM STATE AND PARAMETERS IN LIST OF DICTIONARIES
         if isinstance(self.params,list):
@@ -297,16 +297,17 @@ class Community:
         self.R[self.R<0] = 0
         
         #DEFINE NEW VARIABLES
-        N_tot = np.sum(self.N)
-        R_tot = np.sum(self.R)
+        N_tot = np.sum(self.N, axis=0)
+        R_tot = np.sum(self.R, axis=0)
         N = np.zeros(np.shape(self.N))
         
         #MULTINOMIAL SAMPLING
         #(simulate transfering a finite fraction of a discrete collection of cells)
         for k in range(self.n_wells):
             for j in range(self.n_wells):
-                if f[k,j] > 0 and N_tot[j] > 0:
-                    N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale  
+                if f[k,j] > 0 and N_tot.iloc[j] > 0:
+                   # N[:,k] += np.random.multinomial(int(scale*N_tot[j]*f[k,j]),(self.N.iloc[:,j].values/N_tot))*1./scale  
+                    N[:,k] += np.random.multinomial(int(scale*N_tot.iloc[j]*f[k,j]),(self.N/N_tot).values[:,j])*1./scale 
         self.N = pd.DataFrame(N, index = self.N.index, columns = self.N.keys())
         
         #In batch culture, there is no need to do multinomial sampling on the resources,
@@ -318,12 +319,13 @@ class Community:
         #In continuous culture, it is useful to eliminate the resources that are
         #going extinct, to avoid numerical instability
         else:
-            R_tot = np.sum(self.R)
+            R_tot = np.sum(self.R, axis=0)
             R = np.zeros(np.shape(self.R))
             for k in range(self.n_wells):
                 for j in range(self.n_wells):
-                    if f[k,j] > 0 and R_tot[j] > 0:
-                        R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
+                    if f[k,j] > 0 and R_tot.iloc[j] > 0:
+                        #R[:,k] += np.random.multinomial(int(scale*R_tot[j]*f[k,j]),(self.R.iloc[:,j].values/R_tot))*1./scale
+                        R[:,k] += np.random.multinomial(int(scale*R_tot.iloc[j]*f[k,j]),(self.R/R_tot).values[:,j])*1./scale
             self.R = pd.DataFrame(R, index = self.R.index, columns = self.R.keys())
         
     def RunExperiment(self,f,T,npass,group='Well',scale=None,refresh_resource=True,
@@ -378,8 +380,10 @@ class Community:
             self.Passage(f,scale=scale,refresh_resource=refresh_resource)
             self.Propagate(T,compress_resources=compress_resources,compress_species=compress_species)
             t += T
-            N_traj = N_traj.append(TimeStamp(self.N,t,group=group))
-            R_traj = R_traj.append(TimeStamp(self.R,t,group=group))
+            N_traj = pd.concat([N_traj, TimeStamp(self.N,t,group=group)])
+            #N_traj.append(TimeStamp(self.N,t,group=group))
+            R_traj = pd.concat([R_traj, TimeStamp(self.R,t,group=group)])
+            #R_traj.append(TimeStamp(self.R,t,group=group))
         
         return N_traj, R_traj
     
@@ -419,7 +423,7 @@ class Community:
             params_well = self.params
         
         #INTEGRATE WELL
-        t, out = IntegrateWell(self,{'y0':N_well.append(R_well).values,'params':params_well},T=T,ns=ns,T0=T0,
+        t, out = IntegrateWell(self,{'y0':pd.concat([N_well, R_well]).values,'params':params_well},T=T,ns=ns,T0=T0,
                                return_all=True,log_time=log_time,compress_resources=compress_resources,
                                compress_species=compress_species)
         
